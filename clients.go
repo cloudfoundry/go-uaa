@@ -105,7 +105,7 @@ func (c *Client) Validate() error {
 }
 
 type changeSecretBody struct {
-	ClientID     string `json:"clientID,omitempty"`
+	ClientID     string `json:"clientId,omitempty"`
 	ClientSecret string `json:"secret,omitempty"`
 }
 

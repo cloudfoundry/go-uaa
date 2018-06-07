@@ -483,7 +483,7 @@ var _ = Describe("Clients", func() {
 				ghttp.VerifyHeaderKV("Accept", "application/json"),
 				ghttp.VerifyHeaderKV("Content-Type", "application/json"),
 				ghttp.VerifyHeaderKV("Authorization", "bearer access_token"),
-				ghttp.VerifyJSON(`{"clientID": "peanuts_client", "secret": "new_secret"}`),
+				ghttp.VerifyJSON(`{"clientId": "peanuts_client", "secret": "new_secret"}`),
 			))
 
 			cm := &uaa.ClientManager{HTTPClient: httpClient, Config: config}
@@ -499,7 +499,7 @@ var _ = Describe("Clients", func() {
 				ghttp.VerifyHeaderKV("Accept", "application/json"),
 				ghttp.VerifyHeaderKV("Content-Type", "application/json"),
 				ghttp.VerifyHeaderKV("Authorization", "bearer access_token"),
-				ghttp.VerifyJSON(`{"clientID": "peanuts_client", "secret": "new_secret"}`),
+				ghttp.VerifyJSON(`{"clientId": "peanuts_client", "secret": "new_secret"}`),
 			))
 
 			cm := &uaa.ClientManager{HTTPClient: httpClient, Config: config}
