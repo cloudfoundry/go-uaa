@@ -1,4 +1,4 @@
-package fixtures
+package uaa_test
 
 import (
 	"encoding/json"

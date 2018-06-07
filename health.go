@@ -2,8 +2,6 @@ package uaa
 
 import (
 	"net/http"
-
-	"github.com/cloudfoundry-community/go-uaa/internal/utils"
 )
 
 // HealthStatus is either ok or an error.
@@ -18,7 +16,7 @@ const (
 
 // Health gets the health of the UAA API.
 func Health(target Target) (HealthStatus, error) {
-	url, err := utils.BuildURL(target.BaseURL, "healthz")
+	url, err := buildURL(target.BaseURL, "healthz")
 	if err != nil {
 		return "", err
 	}

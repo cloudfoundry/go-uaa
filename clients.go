@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
-
-	"github.com/cloudfoundry-community/go-uaa/internal/utils"
 )
 
 const clientsResource string = "/oauth/clients"
@@ -45,7 +43,7 @@ func errorMissingValue(value string) error {
 }
 
 func requireRedirectURIForGrantType(c *Client, grantType GrantType) error {
-	if utils.Contains(c.AuthorizedGrantTypes, string(grantType)) {
+	if contains(c.AuthorizedGrantTypes, string(grantType)) {
 		if len(c.RedirectURI) == 0 {
 			return errorMissingValueForGrantType("redirect_uri", grantType)
 		}
@@ -54,7 +52,7 @@ func requireRedirectURIForGrantType(c *Client, grantType GrantType) error {
 }
 
 func requireClientSecretForGrantType(c *Client, grantType GrantType) error {
-	if utils.Contains(c.AuthorizedGrantTypes, string(grantType)) {
+	if contains(c.AuthorizedGrantTypes, string(grantType)) {
 		if c.ClientSecret == "" {
 			return errorMissingValueForGrantType("client_secret", grantType)
 		}

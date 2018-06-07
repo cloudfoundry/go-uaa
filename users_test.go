@@ -7,12 +7,20 @@ import (
 	"fmt"
 	"net/http"
 
-	. "github.com/cloudfoundry-community/go-uaa/internal/fixtures"
-	. "github.com/cloudfoundry-community/go-uaa/internal/utils"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/ghttp"
 )
+
+func newTrueP() *bool {
+	b := true
+	return &b
+}
+
+func newFalseP() *bool {
+	b := false
+	return &b
+}
 
 var _ = Describe("Users", func() {
 	var (
@@ -37,7 +45,7 @@ var _ = Describe("Users", func() {
 
 		Describe("Verified", func() {
 			It("correctly shows false boolean values", func() {
-				user := User{Verified: NewFalseP()}
+				user := User{Verified: newFalseP()}
 				userBytes, _ := json.Marshal(&user)
 				Expect(string(userBytes)).To(MatchJSON(`{"verified": false}`))
 
@@ -47,7 +55,7 @@ var _ = Describe("Users", func() {
 			})
 
 			It("correctly shows true values", func() {
-				user := User{Verified: NewTrueP()}
+				user := User{Verified: newTrueP()}
 				userBytes, _ := json.Marshal(&user)
 				Expect(string(userBytes)).To(MatchJSON(`{"verified": true}`))
 
@@ -68,7 +76,7 @@ var _ = Describe("Users", func() {
 
 		Describe("Active", func() {
 			It("correctly shows false boolean values", func() {
-				user := User{Active: NewFalseP()}
+				user := User{Active: newFalseP()}
 				userBytes, _ := json.Marshal(&user)
 				Expect(string(userBytes)).To(MatchJSON(`{"active": false}`))
 
@@ -78,7 +86,7 @@ var _ = Describe("Users", func() {
 			})
 
 			It("correctly shows true values", func() {
-				user := User{Active: NewTrueP()}
+				user := User{Active: newTrueP()}
 				userBytes, _ := json.Marshal(&user)
 				Expect(string(userBytes)).To(MatchJSON(`{"active": true}`))
 
@@ -91,7 +99,7 @@ var _ = Describe("Users", func() {
 		Describe("Emails", func() {
 			It("correctly shows false boolean values", func() {
 				user := User{}
-				email := Email{Value: "foo@bar.com", Primary: NewFalseP()}
+				email := Email{Value: "foo@bar.com", Primary: newFalseP()}
 				user.Emails = []Email{email}
 
 				userBytes, _ := json.Marshal(&user)
@@ -104,7 +112,7 @@ var _ = Describe("Users", func() {
 
 			It("correctly shows true values", func() {
 				user := User{}
-				email := Email{Value: "foo@bar.com", Primary: NewTrueP()}
+				email := Email{Value: "foo@bar.com", Primary: newTrueP()}
 				user.Emails = []Email{email}
 
 				userBytes, _ := json.Marshal(&user)
@@ -513,7 +521,7 @@ var _ = Describe("Users", func() {
 		BeforeEach(func() {
 			user = User{
 				Username: "marcus@stoicism.com",
-				Active:   NewTrueP(),
+				Active:   newTrueP(),
 			}
 			user.Name = &UserName{GivenName: "Marcus", FamilyName: "Aurelius"}
 		})
@@ -574,7 +582,7 @@ var _ = Describe("Users", func() {
 		BeforeEach(func() {
 			user = User{
 				Username: "marcus@stoicism.com",
-				Active:   NewTrueP(),
+				Active:   newTrueP(),
 			}
 			user.Name = &UserName{GivenName: "Marcus", FamilyName: "Aurelius"}
 		})

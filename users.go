@@ -7,8 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
-
-	"github.com/cloudfoundry-community/go-uaa/internal/utils"
+	"strings"
 )
 
 const usersEndpoint string = "/Users"
@@ -140,10 +139,14 @@ func (um UserManager) GetByUsername(username, origin, attributes string) (User, 
 		}
 
 		msgTmpl := "Found users with username %v in multiple origins %v."
-		msg := fmt.Sprintf(msgTmpl, username, utils.StringSliceStringifier(foundOrigins))
+		msg := fmt.Sprintf(msgTmpl, username, stringSliceStringifier(foundOrigins))
 		return User{}, errors.New(msg)
 	}
 	return users[0], nil
+}
+
+func stringSliceStringifier(stringsList []string) string {
+	return "[" + strings.Join(stringsList, ", ") + "]"
 }
 
 // SortOrder defines the sort order when listing users or groups.

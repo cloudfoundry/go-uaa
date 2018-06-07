@@ -8,8 +8,6 @@ import (
 	"net/http/httputil"
 	"net/textproto"
 	"strings"
-
-	"github.com/cloudfoundry-community/go-uaa/internal/utils"
 )
 
 // CurlManager allows you to make arbitrary requests to the UAA API.
@@ -24,7 +22,7 @@ func (cm CurlManager) Curl(path, method, data string, headers []string) (resHead
 	target := cm.Config.GetActiveTarget()
 	context := target.GetActiveContext()
 
-	url, err := utils.BuildURL(target.BaseURL, path)
+	url, err := buildURL(target.BaseURL, path)
 	if err != nil {
 		return
 	}

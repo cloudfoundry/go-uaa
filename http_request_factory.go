@@ -7,8 +7,6 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
-
-	"github.com/cloudfoundry-community/go-uaa/internal/utils"
 )
 
 // httpRequestFactory is a request builder.
@@ -29,7 +27,7 @@ type authenticatedRequestFactory struct{}
 
 // Get creates a get request with the given target, path and query.
 func (urf unauthenticatedRequestFactory) Get(target Target, path string, query string) (*http.Request, error) {
-	targetURL, err := utils.BuildURL(target.BaseURL, path)
+	targetURL, err := buildURL(target.BaseURL, path)
 	if err != nil {
 		return nil, err
 	}
@@ -46,7 +44,7 @@ func (urf unauthenticatedRequestFactory) Get(target Target, path string, query s
 
 // Delete creates a delete request with the given target, path, and query.
 func (urf unauthenticatedRequestFactory) Delete(target Target, path string, query string) (*http.Request, error) {
-	targetURL, err := utils.BuildURL(target.BaseURL, path)
+	targetURL, err := buildURL(target.BaseURL, path)
 	if err != nil {
 		return nil, err
 	}
@@ -63,7 +61,7 @@ func (urf unauthenticatedRequestFactory) Delete(target Target, path string, quer
 
 // PostForm creates a post request with the given target, path, query, and data.
 func (urf unauthenticatedRequestFactory) PostForm(target Target, path string, query string, data *url.Values) (*http.Request, error) {
-	targetURL, err := utils.BuildURL(target.BaseURL, path)
+	targetURL, err := buildURL(target.BaseURL, path)
 	if err != nil {
 		return nil, err
 	}
@@ -83,7 +81,7 @@ func (urf unauthenticatedRequestFactory) PostForm(target Target, path string, qu
 
 // PostJSON creates a post request with the given target, path, query, and body.
 func (urf unauthenticatedRequestFactory) PostJSON(target Target, path string, query string, body interface{}) (*http.Request, error) {
-	targetURL, err := utils.BuildURL(target.BaseURL, path)
+	targetURL, err := buildURL(target.BaseURL, path)
 	if err != nil {
 		return nil, err
 	}
@@ -108,7 +106,7 @@ func (urf unauthenticatedRequestFactory) PostJSON(target Target, path string, qu
 
 // PutJSON creates a put request with the given target, path, query, and body.
 func (urf unauthenticatedRequestFactory) PutJSON(target Target, path string, query string, body interface{}) (*http.Request, error) {
-	targetURL, err := utils.BuildURL(target.BaseURL, path)
+	targetURL, err := buildURL(target.BaseURL, path)
 	if err != nil {
 		return nil, err
 	}
@@ -133,7 +131,7 @@ func (urf unauthenticatedRequestFactory) PutJSON(target Target, path string, que
 
 // PatchJSON creates a patch request with the given body
 func (urf unauthenticatedRequestFactory) PatchJSON(target Target, path string, query string, body interface{}) (*http.Request, error) {
-	targetURL, err := utils.BuildURL(target.BaseURL, path)
+	targetURL, err := buildURL(target.BaseURL, path)
 	if err != nil {
 		return nil, err
 	}
