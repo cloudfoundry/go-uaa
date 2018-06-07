@@ -408,11 +408,11 @@ var _ = Describe("Users", func() {
 				ghttp.VerifyHeaderKV("Authorization", "bearer access_token"),
 			))
 
-			resp, err := um.List(`id eq "fb5f32e1-5cb3-49e6-93df-6df9c8c8bd7"`, "", "", "", 0, 0)
+			userList, err := um.List(`id eq "fb5f32e1-5cb3-49e6-93df-6df9c8c8bd7"`, "", "", "")
 
 			Expect(err).NotTo(HaveOccurred())
-			Expect(resp.Resources[0].Username).To(Equal("marcus@stoicism.com"))
-			Expect(resp.Resources[1].Username).To(Equal("drseuss@whoville.com"))
+			Expect(userList[0].Username).To(Equal("marcus@stoicism.com"))
+			Expect(userList[1].Username).To(Equal("drseuss@whoville.com"))
 		})
 
 		It("gets all users when no filter is passed", func() {
@@ -421,11 +421,11 @@ var _ = Describe("Users", func() {
 				ghttp.VerifyRequest("GET", "/Users", ""),
 			))
 
-			resp, err := um.List("", "", "", "", 0, 0)
+			userList, err := um.List("", "", "", "")
 
 			Expect(err).NotTo(HaveOccurred())
-			Expect(resp.Resources[0].Username).To(Equal("marcus@stoicism.com"))
-			Expect(resp.Resources[1].Username).To(Equal("drseuss@whoville.com"))
+			Expect(userList[0].Username).To(Equal("marcus@stoicism.com"))
+			Expect(userList[1].Username).To(Equal("drseuss@whoville.com"))
 		})
 
 		It("can accept an attributes list", func() {
@@ -434,10 +434,10 @@ var _ = Describe("Users", func() {
 				ghttp.VerifyRequest("GET", "/Users", "filter=id+eq+%22fb5f32e1-5cb3-49e6-93df-6df9c8c8bd7%22&attributes=userName%2Cemails"),
 			))
 
-			resp, err := um.List(`id eq "fb5f32e1-5cb3-49e6-93df-6df9c8c8bd7"`, "", "userName,emails", "", 0, 0)
+			userList, err := um.List(`id eq "fb5f32e1-5cb3-49e6-93df-6df9c8c8bd7"`, "", "userName,emails", "")
 			Expect(err).NotTo(HaveOccurred())
-			Expect(resp.Resources[0].Username).To(Equal("marcus@stoicism.com"))
-			Expect(resp.Resources[1].Username).To(Equal("drseuss@whoville.com"))
+			Expect(userList[0].Username).To(Equal("marcus@stoicism.com"))
+			Expect(userList[1].Username).To(Equal("drseuss@whoville.com"))
 		})
 
 		It("can accept sortBy", func() {
@@ -446,17 +446,7 @@ var _ = Describe("Users", func() {
 				ghttp.VerifyRequest("GET", "/Users", "sortBy=userName"),
 			))
 
-			_, err := um.List("", "userName", "", "", 0, 0)
-			Expect(err).NotTo(HaveOccurred())
-		})
-
-		It("can accept count", func() {
-			uaaServer.RouteToHandler("GET", "/Users", ghttp.CombineHandlers(
-				ghttp.RespondWith(http.StatusOK, userListResponse),
-				ghttp.VerifyRequest("GET", "/Users", "count=10"),
-			))
-
-			_, err := um.List("", "", "", "", 0, 10)
+			_, err := um.List("", "userName", "", "")
 			Expect(err).NotTo(HaveOccurred())
 		})
 
@@ -466,18 +456,28 @@ var _ = Describe("Users", func() {
 				ghttp.VerifyRequest("GET", "/Users", "sortOrder=ascending"),
 			))
 
-			_, err := um.List("", "", "", SortAscending, 0, 0)
+			_, err := um.List("", "", "", SortAscending)
 			Expect(err).NotTo(HaveOccurred())
 		})
 
-		It("can accept startIndex", func() {
-			uaaServer.RouteToHandler("GET", "/Users", ghttp.CombineHandlers(
-				ghttp.RespondWith(http.StatusOK, userListResponse),
-				ghttp.VerifyRequest("GET", "/Users", "startIndex=10"),
-			))
+		It("can return multiple pages", func() {
+			page1 := MultiPaginatedResponse(1, 1, 2, User{Username: "marcus", Origin: "uaa"})
+			page2 := MultiPaginatedResponse(2, 1, 2, User{Username: "drseuss", Origin: "uaa"})
+			uaaServer.AppendHandlers(
+				ghttp.CombineHandlers(
+					ghttp.RespondWith(http.StatusOK, page1),
+					ghttp.VerifyRequest("GET", "/Users", ""),
+				),
+				ghttp.CombineHandlers(
+					ghttp.RespondWith(http.StatusOK, page2),
+					ghttp.VerifyRequest("GET", "/Users", "count=1&startIndex=2"),
+				),
+			)
+			userList, err := um.List("", "", "", "")
 
-			_, err := um.List("", "", "", "", 10, 0)
 			Expect(err).NotTo(HaveOccurred())
+			Expect(userList[0].Username).To(Equal("marcus"))
+			Expect(userList[1].Username).To(Equal("drseuss"))
 		})
 
 		It("returns an error when /Users doesn't respond", func() {
@@ -488,7 +488,7 @@ var _ = Describe("Users", func() {
 				ghttp.VerifyHeaderKV("Authorization", "bearer access_token"),
 			))
 
-			_, err := um.List(`id eq "fb5f32e1-5cb3-49e6-93df-6df9c8c8bd7"`, "", "", "", 0, 0)
+			_, err := um.List(`id eq "fb5f32e1-5cb3-49e6-93df-6df9c8c8bd7"`, "", "", "")
 
 			Expect(err).To(HaveOccurred())
 		})
@@ -501,7 +501,7 @@ var _ = Describe("Users", func() {
 				ghttp.VerifyHeaderKV("Authorization", "bearer access_token"),
 			))
 
-			_, err := um.List(`id eq "fb5f32e1-5cb3-49e6-93df-6df9c8c8bd7"`, "", "", "", 0, 0)
+			_, err := um.List(`id eq "fb5f32e1-5cb3-49e6-93df-6df9c8c8bd7"`, "", "", "")
 
 			Expect(err).To(HaveOccurred())
 		})

@@ -121,6 +121,18 @@ const PaginatedResponseTmpl = `{
 		"schemas" : [ "urn:scim:schemas:core:1.0"]
 	}`
 
+func MultiPaginatedResponse(startIndex, itemsPerPage, totalResults int, resources ...interface{}) string {
+	bytes, _ := json.Marshal(resources)
+
+	return fmt.Sprintf(`{
+		"resources": %v,
+		"startIndex" : %d,
+		"itemsPerPage" : %d,
+		"totalResults" : %d,
+		"schemas" : [ "urn:scim:schemas:core:1.0"]
+	}`, string(bytes), startIndex, itemsPerPage, totalResults)
+}
+
 func PaginatedResponse(resources ...interface{}) string {
 	bytes, _ := json.Marshal(resources)
 

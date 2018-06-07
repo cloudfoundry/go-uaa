@@ -87,9 +87,9 @@ type UserManager struct {
 // PaginatedUserList is the response from the API for a single page of users.
 type PaginatedUserList struct {
 	Resources    []User   `json:"resources"`
-	StartIndex   int32    `json:"startIndex"`
-	ItemsPerPage int32    `json:"itemsPerPage"`
-	TotalResults int32    `json:"totalResults"`
+	StartIndex   int      `json:"startIndex"`
+	ItemsPerPage int      `json:"itemsPerPage"`
+	TotalResults int      `json:"totalResults"`
 	Schemas      []string `json:"schemas"`
 }
 
@@ -126,16 +126,16 @@ func (um UserManager) GetByUsername(username, origin, attributes string) (User, 
 		help = fmt.Sprintf(`%s in origin %v`, help, origin)
 	}
 
-	users, err := um.List(filter, "", attributes, "", 0, 0)
+	users, err := um.List(filter, "", attributes, "")
 	if err != nil {
 		return User{}, err
 	}
-	if len(users.Resources) == 0 {
+	if len(users) == 0 {
 		return User{}, errors.New(help)
 	}
-	if len(users.Resources) > 1 && origin == "" {
+	if len(users) > 1 && origin == "" {
 		var foundOrigins []string
-		for _, user := range users.Resources {
+		for _, user := range users {
 			foundOrigins = append(foundOrigins, user.Origin)
 		}
 
@@ -143,7 +143,7 @@ func (um UserManager) GetByUsername(username, origin, attributes string) (User, 
 		msg := fmt.Sprintf(msgTmpl, username, utils.StringSliceStringifier(foundOrigins))
 		return User{}, errors.New(msg)
 	}
-	return users.Resources[0], nil
+	return users[0], nil
 }
 
 // SortOrder defines the sort order when listing users or groups.
@@ -156,9 +156,30 @@ const (
 	SortDescending = SortOrder("descending")
 )
 
+func getUserPage(um UserManager, query url.Values, startIndex, count int) (PaginatedUserList, error) {
+	if startIndex != 0 {
+		query.Add("startIndex", strconv.Itoa(startIndex))
+	}
+	if count != 0 {
+		query.Add("count", strconv.Itoa(count))
+	}
+
+	bytes, err := AuthenticatedRequestor{}.Get(um.HTTPClient, um.Config, usersEndpoint, query.Encode())
+	if err != nil {
+		return PaginatedUserList{}, err
+	}
+
+	userList := PaginatedUserList{}
+	err = json.Unmarshal(bytes, &userList)
+	if err != nil {
+		return PaginatedUserList{}, parseError(usersEndpoint, bytes)
+	}
+	return userList, nil
+}
+
 // List users
 // http://docs.cloudfoundry.org/api/uaa/version/4.14.0/index.html#list-with-attribute-filtering.
-func (um UserManager) List(filter, sortBy, attributes string, sortOrder SortOrder, startIdx, count int) (PaginatedUserList, error) {
+func (um UserManager) List(filter, sortBy, attributes string, sortOrder SortOrder) ([]User, error) {
 	query := url.Values{}
 	if filter != "" {
 		query.Add("filter", filter)
@@ -169,28 +190,27 @@ func (um UserManager) List(filter, sortBy, attributes string, sortOrder SortOrde
 	if sortBy != "" {
 		query.Add("sortBy", sortBy)
 	}
-	if count != 0 {
-		query.Add("count", strconv.Itoa(count))
-	}
-	if startIdx != 0 {
-		query.Add("startIndex", strconv.Itoa(startIdx))
-	}
 	if sortOrder != "" {
 		query.Add("sortOrder", string(sortOrder))
 	}
 
-	bytes, err := AuthenticatedRequestor{}.Get(um.HTTPClient, um.Config, usersEndpoint, query.Encode())
+	results, err := getUserPage(um, query, 0, 0)
 	if err != nil {
-		return PaginatedUserList{}, err
+		return []User{}, err
 	}
 
-	usersResp := PaginatedUserList{}
-	err = json.Unmarshal(bytes, &usersResp)
-	if err != nil {
-		return PaginatedUserList{}, parseError(usersEndpoint, bytes)
+	userList := results.Resources
+	startIndex, count := results.StartIndex, results.ItemsPerPage
+	for results.TotalResults > len(userList) {
+		startIndex += count
+		newResults, err := getUserPage(um, query, startIndex, count)
+		if err != nil {
+			return []User{}, err
+		}
+		userList = append(userList, newResults.Resources...)
 	}
 
-	return usersResp, err
+	return userList, nil
 }
 
 // Create the given user
