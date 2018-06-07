@@ -32,9 +32,9 @@ type Group struct {
 // PaginatedGroupList is the response from the API for a single page of groups.
 type PaginatedGroupList struct {
 	Resources    []Group  `json:"resources"`
-	StartIndex   int32    `json:"startIndex"`
-	ItemsPerPage int32    `json:"itemsPerPage"`
-	TotalResults int32    `json:"totalResults"`
+	StartIndex   int      `json:"startIndex"`
+	ItemsPerPage int      `json:"itemsPerPage"`
+	TotalResults int      `json:"totalResults"`
 	Schemas      []string `json:"schemas"`
 }
 
@@ -82,19 +82,40 @@ func (gm GroupManager) GetByName(name, attributes string) (Group, error) {
 	}
 
 	filter := fmt.Sprintf(`displayName eq "%v"`, name)
-	groups, err := gm.List(filter, "", attributes, "", 0, 0)
+	groups, err := gm.List(filter, "", attributes, "")
 	if err != nil {
 		return Group{}, err
 	}
-	if len(groups.Resources) == 0 {
+	if len(groups) == 0 {
 		return Group{}, fmt.Errorf("group %v not found", name)
 	}
-	return groups.Resources[0], nil
+	return groups[0], nil
+}
+
+func getGroupPage(gm GroupManager, query url.Values, startIndex, count int) (PaginatedGroupList, error) {
+	if startIndex != 0 {
+		query.Add("startIndex", strconv.Itoa(startIndex))
+	}
+	if count != 0 {
+		query.Add("count", strconv.Itoa(count))
+	}
+
+	bytes, err := AuthenticatedRequestor{}.Get(gm.HTTPClient, gm.Config, groupResource, query.Encode())
+	if err != nil {
+		return PaginatedGroupList{}, err
+	}
+
+	groupList := PaginatedGroupList{}
+	err = json.Unmarshal(bytes, &groupList)
+	if err != nil {
+		return PaginatedGroupList{}, parseError(groupResource, bytes)
+	}
+	return groupList, nil
 }
 
 // List groups
 // http://docs.cloudfoundry.org/api/uaa/version/4.14.0/index.html#list-4.
-func (gm GroupManager) List(filter, sortBy, attributes string, sortOrder SortOrder, startIdx, count int) (PaginatedGroupList, error) {
+func (gm GroupManager) List(filter, sortBy, attributes string, sortOrder SortOrder) ([]Group, error) {
 	query := url.Values{}
 	if filter != "" {
 		query.Add("filter", filter)
@@ -105,28 +126,27 @@ func (gm GroupManager) List(filter, sortBy, attributes string, sortOrder SortOrd
 	if sortBy != "" {
 		query.Add("sortBy", sortBy)
 	}
-	if count != 0 {
-		query.Add("count", strconv.Itoa(count))
-	}
-	if startIdx != 0 {
-		query.Add("startIndex", strconv.Itoa(startIdx))
-	}
 	if sortOrder != "" {
 		query.Add("sortOrder", string(sortOrder))
 	}
 
-	bytes, err := AuthenticatedRequestor{}.Get(gm.HTTPClient, gm.Config, groupResource, query.Encode())
+	results, err := getGroupPage(gm, query, 0, 0)
 	if err != nil {
-		return PaginatedGroupList{}, err
+		return []Group{}, err
 	}
 
-	groupsResp := PaginatedGroupList{}
-	err = json.Unmarshal(bytes, &groupsResp)
-	if err != nil {
-		return PaginatedGroupList{}, parseError(groupResource, bytes)
+	groupList := results.Resources
+	startIndex, count := results.StartIndex, results.ItemsPerPage
+	for results.TotalResults > len(groupList) {
+		startIndex += count
+		newResults, err := getGroupPage(gm, query, startIndex, count)
+		if err != nil {
+			return []Group{}, err
+		}
+		groupList = append(groupList, newResults.Resources...)
 	}
 
-	return groupsResp, err
+	return groupList, nil
 }
 
 // Create the given group

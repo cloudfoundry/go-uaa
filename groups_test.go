@@ -159,11 +159,11 @@ var _ = Describe("Groups", func() {
 				ghttp.VerifyHeaderKV("Authorization", "bearer access_token"),
 			))
 
-			resp, err := gm.List(`id eq "fb5f32e1-5cb3-49e6-93df-6df9c8c8bd7"`, "", "", "", 0, 0)
+			groupList, err := gm.List(`id eq "fb5f32e1-5cb3-49e6-93df-6df9c8c8bd7"`, "", "", "")
 
 			Expect(err).NotTo(HaveOccurred())
-			Expect(resp.Resources[0].DisplayName).To(Equal("uaa.admin"))
-			Expect(resp.Resources[1].DisplayName).To(Equal("cloud_controller.read"))
+			Expect(groupList[0].DisplayName).To(Equal("uaa.admin"))
+			Expect(groupList[1].DisplayName).To(Equal("cloud_controller.read"))
 		})
 
 		It("gets all groups when no filter is passed", func() {
@@ -172,11 +172,11 @@ var _ = Describe("Groups", func() {
 				ghttp.VerifyRequest("GET", "/Groups", ""),
 			))
 
-			resp, err := gm.List("", "", "", "", 0, 0)
+			groupList, err := gm.List("", "", "", "")
 
 			Expect(err).NotTo(HaveOccurred())
-			Expect(resp.Resources[0].DisplayName).To(Equal("uaa.admin"))
-			Expect(resp.Resources[1].DisplayName).To(Equal("cloud_controller.read"))
+			Expect(groupList[0].DisplayName).To(Equal("uaa.admin"))
+			Expect(groupList[1].DisplayName).To(Equal("cloud_controller.read"))
 		})
 
 		It("can accept an attributes list", func() {
@@ -185,10 +185,10 @@ var _ = Describe("Groups", func() {
 				ghttp.VerifyRequest("GET", "/Groups", "filter=id+eq+%22fb5f32e1-5cb3-49e6-93df-6df9c8c8bd7%22&attributes=displayName"),
 			))
 
-			resp, err := gm.List(`id eq "fb5f32e1-5cb3-49e6-93df-6df9c8c8bd7"`, "", "displayName", "", 0, 0)
+			groupList, err := gm.List(`id eq "fb5f32e1-5cb3-49e6-93df-6df9c8c8bd7"`, "", "displayName", "")
 			Expect(err).NotTo(HaveOccurred())
-			Expect(resp.Resources[0].DisplayName).To(Equal("uaa.admin"))
-			Expect(resp.Resources[1].DisplayName).To(Equal("cloud_controller.read"))
+			Expect(groupList[0].DisplayName).To(Equal("uaa.admin"))
+			Expect(groupList[1].DisplayName).To(Equal("cloud_controller.read"))
 		})
 
 		It("can accept sortBy", func() {
@@ -197,17 +197,7 @@ var _ = Describe("Groups", func() {
 				ghttp.VerifyRequest("GET", "/Groups", "sortBy=displayName"),
 			))
 
-			_, err := gm.List("", "displayName", "", "", 0, 0)
-			Expect(err).NotTo(HaveOccurred())
-		})
-
-		It("can accept count", func() {
-			uaaServer.RouteToHandler("GET", "/Groups", ghttp.CombineHandlers(
-				ghttp.RespondWith(http.StatusOK, groupListResponse),
-				ghttp.VerifyRequest("GET", "/Groups", "count=10"),
-			))
-
-			_, err := gm.List("", "", "", "", 0, 10)
+			_, err := gm.List("", "displayName", "", "")
 			Expect(err).NotTo(HaveOccurred())
 		})
 
@@ -217,18 +207,29 @@ var _ = Describe("Groups", func() {
 				ghttp.VerifyRequest("GET", "/Groups", "sortOrder=ascending"),
 			))
 
-			_, err := gm.List("", "", "", SortAscending, 0, 0)
+			_, err := gm.List("", "", "", SortAscending)
 			Expect(err).NotTo(HaveOccurred())
 		})
 
-		It("can accept startIndex", func() {
-			uaaServer.RouteToHandler("GET", "/Groups", ghttp.CombineHandlers(
-				ghttp.RespondWith(http.StatusOK, groupListResponse),
-				ghttp.VerifyRequest("GET", "/Groups", "startIndex=10"),
-			))
+		It("can retrieve multiple pages", func() {
+			page1 := MultiPaginatedResponse(1, 1, 2, Group{DisplayName: "uaa.admin"})
+			page2 := MultiPaginatedResponse(2, 1, 2, Group{DisplayName: "cloud_controller.read"})
+			uaaServer.AppendHandlers(
+				ghttp.CombineHandlers(
+					ghttp.RespondWith(http.StatusOK, page1),
+					ghttp.VerifyRequest("GET", "/Groups", ""),
+				),
+				ghttp.CombineHandlers(
+					ghttp.RespondWith(http.StatusOK, page2),
+					ghttp.VerifyRequest("GET", "/Groups", "count=1&startIndex=2"),
+				),
+			)
 
-			_, err := gm.List("", "", "", "", 10, 0)
+			groupList, err := gm.List("", "", "", "")
+
 			Expect(err).NotTo(HaveOccurred())
+			Expect(groupList[0].DisplayName).To(Equal("uaa.admin"))
+			Expect(groupList[1].DisplayName).To(Equal("cloud_controller.read"))
 		})
 
 		It("returns an error when /Groups doesn't respond", func() {
@@ -239,7 +240,7 @@ var _ = Describe("Groups", func() {
 				ghttp.VerifyHeaderKV("Authorization", "bearer access_token"),
 			))
 
-			_, err := gm.List(`id eq "fb5f32e1-5cb3-49e6-93df-6df9c8c8bd7"`, "", "", "", 0, 0)
+			_, err := gm.List(`id eq "fb5f32e1-5cb3-49e6-93df-6df9c8c8bd7"`, "", "", "")
 
 			Expect(err).To(HaveOccurred())
 		})
@@ -252,7 +253,7 @@ var _ = Describe("Groups", func() {
 				ghttp.VerifyHeaderKV("Authorization", "bearer access_token"),
 			))
 
-			_, err := gm.List(`id eq "fb5f32e1-5cb3-49e6-93df-6df9c8c8bd7"`, "", "", "", 0, 0)
+			_, err := gm.List(`id eq "fb5f32e1-5cb3-49e6-93df-6df9c8c8bd7"`, "", "", "")
 
 			Expect(err).To(HaveOccurred())
 		})
