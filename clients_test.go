@@ -3,7 +3,7 @@ package uaa_test
 import (
 	"net/http"
 
-	"github.com/cloudfoundry-community/uaa"
+	"github.com/cloudfoundry-community/go-uaa"
 	"github.com/onsi/gomega/ghttp"
 
 	. "github.com/onsi/ginkgo"

@@ -9,7 +9,7 @@ import (
 	"net/textproto"
 	"strings"
 
-	"github.com/cloudfoundry-community/uaa/internal/utils"
+	"github.com/cloudfoundry-community/go-uaa/internal/utils"
 )
 
 // CurlManager allows you to make arbitrary requests to the UAA API.

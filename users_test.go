@@ -1,14 +1,14 @@
 package uaa_test
 
 import (
-	. "github.com/cloudfoundry-community/uaa"
+	. "github.com/cloudfoundry-community/go-uaa"
 
 	"encoding/json"
 	"fmt"
 	"net/http"
 
-	. "github.com/cloudfoundry-community/uaa/internal/fixtures"
-	. "github.com/cloudfoundry-community/uaa/internal/utils"
+	. "github.com/cloudfoundry-community/go-uaa/internal/fixtures"
+	. "github.com/cloudfoundry-community/go-uaa/internal/utils"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/ghttp"

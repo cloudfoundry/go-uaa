@@ -1,4 +1,4 @@
-# `uaa` [![Travis-CI](https://travis-ci.org/cloudfoundry-community/uaa.svg)](https://travis-ci.org/cloudfoundry-community/uaa) [![GoDoc](https://godoc.org/github.com/cloudfoundry-community/uaa?status.svg)](http://godoc.org/github.com/cloudfoundry-community/uaa) [![Report card](https://goreportcard.com/badge/github.com/cloudfoundry-community/uaa)](https://goreportcard.com/report/github.com/cloudfoundry-community/uaa)
+# `uaa` [![Travis-CI](https://travis-ci.org/cloudfoundry-community/uaa.svg)](https://travis-ci.org/cloudfoundry-community/uaa) [![GoDoc](https://godoc.org/github.com/cloudfoundry-community/go-uaa?status.svg)](http://godoc.org/github.com/cloudfoundry-community/go-uaa) [![Report card](https://goreportcard.com/badge/github.com/cloudfoundry-community/go-uaa)](https://goreportcard.com/report/github.com/cloudfoundry-community/go-uaa)
 
 ### Overview
 
@@ -7,7 +7,7 @@
 ### Usage
 
 ```
-go get -u github.com/cloudfoundry-community/uaa
+go get -u github.com/cloudfoundry-community/go-uaa
 ```
 
 ### Experimental

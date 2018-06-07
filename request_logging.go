@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 
-	"github.com/cloudfoundry-community/uaa/internal/utils"
+	"github.com/cloudfoundry-community/go-uaa/internal/utils"
 )
 
 func logResponse(response *http.Response) {

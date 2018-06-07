@@ -6,8 +6,8 @@ import (
 
 	"github.com/onsi/gomega/ghttp"
 
-	. "github.com/cloudfoundry-community/uaa"
-	. "github.com/cloudfoundry-community/uaa/internal/fixtures"
+	. "github.com/cloudfoundry-community/go-uaa"
+	. "github.com/cloudfoundry-community/go-uaa/internal/fixtures"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

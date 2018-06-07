@@ -8,7 +8,7 @@ import (
 	"net/url"
 	"strconv"
 
-	"github.com/cloudfoundry-community/uaa/internal/utils"
+	"github.com/cloudfoundry-community/go-uaa/internal/utils"
 )
 
 // httpRequestFactory is a request builder.

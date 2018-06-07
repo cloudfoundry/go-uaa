@@ -1,7 +1,7 @@
 package uaa_test
 
 import (
-	. "github.com/cloudfoundry-community/uaa"
+	. "github.com/cloudfoundry-community/go-uaa"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/ghttp"

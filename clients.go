@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/cloudfoundry-community/uaa/internal/utils"
+	"github.com/cloudfoundry-community/go-uaa/internal/utils"
 )
 
 const clientsResource string = "/oauth/clients"

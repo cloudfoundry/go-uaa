@@ -3,7 +3,7 @@ package uaa
 import (
 	"net/http"
 
-	"github.com/cloudfoundry-community/uaa/internal/utils"
+	"github.com/cloudfoundry-community/go-uaa/internal/utils"
 )
 
 // HealthStatus is either ok or an error.
