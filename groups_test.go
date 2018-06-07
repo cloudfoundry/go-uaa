@@ -8,7 +8,7 @@ import (
 	"github.com/onsi/gomega/ghttp"
 
 	. "github.com/cloudfoundry-community/uaa"
-	. "github.com/cloudfoundry-community/uaa/fixtures"
+	. "github.com/cloudfoundry-community/uaa/internal/fixtures"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -23,7 +23,7 @@ var _ = Describe("Groups", func() {
 		uaaServer = ghttp.NewServer()
 		config := NewConfigWithServerURL(uaaServer.URL())
 		config.AddContext(NewContextWithToken("access_token"))
-		gm = GroupManager{&http.Client{}, config}
+		gm = GroupManager{HTTPClient: &http.Client{}, Config: config}
 	})
 
 	var groupListResponse = fmt.Sprintf(PaginatedResponseTmpl, UaaAdminGroupResponse, CloudControllerReadGroupResponse)
@@ -87,13 +87,13 @@ var _ = Describe("Groups", func() {
 			It("returns an error", func() {
 				_, err := gm.GetByName("", "")
 				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(Equal("Group name may not be blank."))
+				Expect(err.Error()).To(Equal("group name may not be blank"))
 			})
 		})
 
 		Context("when no origin is specified", func() {
 			It("looks up a group with a SCIM filter", func() {
-				group := ScimGroup{DisplayName: "uaa.admin"}
+				group := Group{DisplayName: "uaa.admin"}
 				response := PaginatedResponse(group)
 
 				uaaServer.RouteToHandler("GET", "/Groups", ghttp.CombineHandlers(
@@ -131,14 +131,14 @@ var _ = Describe("Groups", func() {
 
 				_, err := gm.GetByName("uaa.admin", "")
 				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(Equal(`Group uaa.admin not found.`))
+				Expect(err.Error()).To(Equal(`group uaa.admin not found`))
 			})
 		})
 
 		Context("when attributes are specified", func() {
 			It("adds them to the GET request", func() {
 				uaaServer.RouteToHandler("GET", "/Groups", ghttp.CombineHandlers(
-					ghttp.RespondWith(http.StatusOK, PaginatedResponse(ScimGroup{DisplayName: "uaa.admin"})),
+					ghttp.RespondWith(http.StatusOK, PaginatedResponse(Group{DisplayName: "uaa.admin"})),
 					ghttp.VerifyRequest("GET", "/Groups", "filter=displayName+eq+%22uaa.admin%22&attributes=displayName"),
 					ghttp.VerifyHeaderKV("Accept", "application/json"),
 					ghttp.VerifyHeaderKV("Authorization", "bearer access_token"),
@@ -217,7 +217,7 @@ var _ = Describe("Groups", func() {
 				ghttp.VerifyRequest("GET", "/Groups", "sortOrder=ascending"),
 			))
 
-			_, err := gm.List("", "", "", SORT_ASCENDING, 0, 0)
+			_, err := gm.List("", "", "", SortAscending, 0, 0)
 			Expect(err).NotTo(HaveOccurred())
 		})
 
@@ -259,10 +259,10 @@ var _ = Describe("Groups", func() {
 	})
 
 	Describe("GroupManager#Create", func() {
-		var group ScimGroup
+		var group Group
 
 		BeforeEach(func() {
-			group = ScimGroup{
+			group = Group{
 				DisplayName: "uaa.admin",
 			}
 		})
@@ -288,7 +288,7 @@ var _ = Describe("Groups", func() {
 				ghttp.RespondWith(http.StatusOK, UaaAdminGroupResponse),
 			))
 
-			group, _ := gm.Create(group)
+			group, _ = gm.Create(group)
 
 			Expect(group.DisplayName).To(Equal("uaa.admin"))
 		})
@@ -317,10 +317,10 @@ var _ = Describe("Groups", func() {
 	})
 
 	Describe("GroupManager#Update", func() {
-		var group ScimGroup
+		var group Group
 
 		BeforeEach(func() {
-			group = ScimGroup{
+			group = Group{
 				DisplayName: "uaa.admin",
 			}
 		})
@@ -346,7 +346,7 @@ var _ = Describe("Groups", func() {
 				ghttp.RespondWith(http.StatusOK, UaaAdminGroupResponse),
 			))
 
-			group, _ := gm.Update(group)
+			group, _ = gm.Update(group)
 
 			Expect(group.DisplayName).To(Equal("uaa.admin"))
 		})
@@ -424,13 +424,13 @@ var _ = Describe("Groups", func() {
 
 	Describe("GroupManager#AddMember", func() {
 		It("adds a membership", func() {
-			membershipJson := `{"origin":"uaa","type":"USER","value":"fb5f32e1-5cb3-49e6-93df-6df9c8c8bd70"}`
+			membershipJSON := `{"origin":"uaa","type":"USER","value":"fb5f32e1-5cb3-49e6-93df-6df9c8c8bd70"}`
 			uaaServer.RouteToHandler("POST", "/Groups/05a0c169-3592-4a45-b109-a16d9246e0ab/members", ghttp.CombineHandlers(
 				ghttp.VerifyRequest("POST", "/Groups/05a0c169-3592-4a45-b109-a16d9246e0ab/members"),
 				ghttp.VerifyHeaderKV("Authorization", "bearer access_token"),
 				ghttp.VerifyHeaderKV("Accept", "application/json"),
-				ghttp.VerifyJSON(membershipJson),
-				ghttp.RespondWith(http.StatusOK, membershipJson),
+				ghttp.VerifyJSON(membershipJSON),
+				ghttp.RespondWith(http.StatusOK, membershipJSON),
 			))
 
 			gm.AddMember("05a0c169-3592-4a45-b109-a16d9246e0ab", "fb5f32e1-5cb3-49e6-93df-6df9c8c8bd70")

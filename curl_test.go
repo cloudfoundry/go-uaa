@@ -7,7 +7,7 @@ import (
 	"github.com/onsi/gomega/ghttp"
 
 	. "github.com/cloudfoundry-community/uaa"
-	. "github.com/cloudfoundry-community/uaa/fixtures"
+	. "github.com/cloudfoundry-community/uaa/internal/fixtures"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -23,7 +23,7 @@ var _ = Describe("Curl", func() {
 		uaaServer = ghttp.NewServer()
 		config := NewConfigWithServerURL(uaaServer.URL())
 		config.AddContext(NewContextWithToken("access_token"))
-		cm = CurlManager{&http.Client{}, config}
+		cm = CurlManager{HTTPClient: &http.Client{}, Config: config}
 	})
 
 	Describe("CurlManager#Curl", func() {
@@ -38,7 +38,7 @@ var _ = Describe("Curl", func() {
 			_, resBody, err := cm.Curl("/Users/fb5f32e1-5cb3-49e6-93df-6df9c8c8bd70", "GET", "", []string{"Accept: application/json"})
 			Expect(err).NotTo(HaveOccurred())
 
-			var user ScimUser
+			var user User
 			err = json.Unmarshal([]byte(resBody), &user)
 			Expect(err).NotTo(HaveOccurred())
 
@@ -47,7 +47,7 @@ var _ = Describe("Curl", func() {
 
 		It("can POST body and multiple headers", func() {
 			reqBody := map[string]interface{}{
-				"externalId": "marcus-user",
+				"externalID": "marcus-user",
 				"userName":   "marcus@stoicism.com",
 			}
 			uaaServer.RouteToHandler("POST", "/Users", ghttp.CombineHandlers(
@@ -62,9 +62,9 @@ var _ = Describe("Curl", func() {
 			reqBodyBytes, err := json.Marshal(reqBody)
 			Expect(err).NotTo(HaveOccurred())
 
-			_, resBody, err := cm.Curl("/Users", "POST", string(reqBodyBytes), []string{"Content-Type: application/json", "Accept: application/json"})
+			_, resBody, _ := cm.Curl("/Users", "POST", string(reqBodyBytes), []string{"Content-Type: application/json", "Accept: application/json"})
 
-			var user ScimUser
+			var user User
 			err = json.Unmarshal([]byte(resBody), &user)
 			Expect(err).NotTo(HaveOccurred())
 

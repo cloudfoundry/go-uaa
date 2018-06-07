@@ -3,18 +3,22 @@ package uaa
 import (
 	"net/http"
 
-	"github.com/cloudfoundry-community/uaa/utils"
+	"github.com/cloudfoundry-community/uaa/internal/utils"
 )
 
-type UaaHealthStatus string
+// HealthStatus is either ok or an error.
+type HealthStatus string
 
 const (
-	OK    = UaaHealthStatus("ok")
-	ERROR = UaaHealthStatus("health_error")
+	// OK is healthy.
+	OK = HealthStatus("ok")
+	// ERROR is unhealthy.
+	ERROR = HealthStatus("health_error")
 )
 
-func Health(target Target) (UaaHealthStatus, error) {
-	url, err := utils.BuildUrl(target.BaseUrl, "healthz")
+// Health gets the health of the UAA API.
+func Health(target Target) (HealthStatus, error) {
+	url, err := utils.BuildURL(target.BaseURL, "healthz")
 	if err != nil {
 		return "", err
 	}
@@ -26,7 +30,7 @@ func Health(target Target) (UaaHealthStatus, error) {
 
 	if resp.StatusCode == 200 {
 		return OK, nil
-	} else {
-		return ERROR, nil
 	}
+
+	return ERROR, nil
 }

@@ -17,7 +17,7 @@ var _ = Describe("Info", func() {
 		client *http.Client
 	)
 
-	const InfoResponseJson string = `{
+	const InfoResponseJSON string = `{
 	  "app": {
 		"version": "4.5.0"
 	  },
@@ -58,12 +58,12 @@ var _ = Describe("Info", func() {
 
 	It("calls the /info endpoint", func() {
 		server.RouteToHandler("GET", "/info", ghttp.CombineHandlers(
-			ghttp.RespondWith(200, InfoResponseJson),
+			ghttp.RespondWith(200, InfoResponseJSON),
 			ghttp.VerifyRequest("GET", "/info"),
 			ghttp.VerifyHeaderKV("Accept", "application/json"),
 		))
 
-		infoResponse, _ := Info(client, config)
+		infoResponse, _ := GetInfo(client, config)
 
 		Expect(server.ReceivedRequests()).To(HaveLen(1))
 		Expect(infoResponse.App.Version).To(Equal("4.5.0"))
@@ -72,8 +72,8 @@ var _ = Describe("Info", func() {
 		Expect(infoResponse.Links.Registration).To(Equal("https://account.run.pivotal.io/sign-up"))
 		Expect(infoResponse.Links.Login).To(Equal("https://login.run.pivotal.io"))
 		Expect(infoResponse.ZoneName).To(Equal("uaa"))
-		Expect(infoResponse.EntityId).To(Equal("login.run.pivotal.io"))
-		Expect(infoResponse.CommitId).To(Equal("df80f63"))
+		Expect(infoResponse.EntityID).To(Equal("login.run.pivotal.io"))
+		Expect(infoResponse.CommitID).To(Equal("df80f63"))
 		Expect(infoResponse.IdpDefinitions["SAML"]).To(Equal("http://localhost:8080/uaa/saml/discovery?returnIDParam=idp&entityID=cloudfoundry-saml-login&idp=SAML&isPassive=true"))
 		Expect(infoResponse.Prompts["username"]).To(Equal([]string{"text", "Email"}))
 		Expect(infoResponse.Prompts["password"]).To(Equal([]string{"password", "Password"}))
@@ -87,7 +87,7 @@ var _ = Describe("Info", func() {
 			ghttp.VerifyHeaderKV("Accept", "application/json"),
 		))
 
-		_, err := Info(client, config)
+		_, err := GetInfo(client, config)
 
 		Expect(err).NotTo(BeNil())
 		Expect(err.Error()).To(ContainSubstring("An unknown error occurred while calling"))
@@ -100,7 +100,7 @@ var _ = Describe("Info", func() {
 			ghttp.VerifyHeaderKV("Accept", "application/json"),
 		))
 
-		_, err := Info(client, config)
+		_, err := GetInfo(client, config)
 
 		Expect(err).NotTo(BeNil())
 		Expect(err.Error()).To(ContainSubstring("An unknown error occurred while parsing response from"))

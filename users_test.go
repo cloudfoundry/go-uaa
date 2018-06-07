@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"net/http"
 
-	. "github.com/cloudfoundry-community/uaa/fixtures"
-	. "github.com/cloudfoundry-community/uaa/utils"
+	. "github.com/cloudfoundry-community/uaa/internal/fixtures"
+	. "github.com/cloudfoundry-community/uaa/internal/utils"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/ghttp"
@@ -24,12 +24,12 @@ var _ = Describe("Users", func() {
 		uaaServer = ghttp.NewServer()
 		config := NewConfigWithServerURL(uaaServer.URL())
 		config.AddContext(NewContextWithToken("access_token"))
-		um = UserManager{&http.Client{}, config}
+		um = UserManager{HTTPClient: &http.Client{}, Config: config}
 	})
 
 	var userListResponse = fmt.Sprintf(PaginatedResponseTmpl, MarcusUserResponse, DrSeussUserResponse)
 
-	Describe("ScimUser Json", func() {
+	Describe("ScimUser JSON", func() {
 		// All this dance is necessary because the --attributes option means I need
 		// to be able to hide values that aren't sent in the server response. If I
 		// just used omitempty, I wouldn't be able to distinguish between empty values
@@ -37,27 +37,27 @@ var _ = Describe("Users", func() {
 
 		Describe("Verified", func() {
 			It("correctly shows false boolean values", func() {
-				user := ScimUser{Verified: NewFalseP()}
+				user := User{Verified: NewFalseP()}
 				userBytes, _ := json.Marshal(&user)
 				Expect(string(userBytes)).To(MatchJSON(`{"verified": false}`))
 
-				newUser := ScimUser{}
+				newUser := User{}
 				json.Unmarshal([]byte(userBytes), &newUser)
 				Expect(*newUser.Verified).To(BeFalse())
 			})
 
 			It("correctly shows true values", func() {
-				user := ScimUser{Verified: NewTrueP()}
+				user := User{Verified: NewTrueP()}
 				userBytes, _ := json.Marshal(&user)
 				Expect(string(userBytes)).To(MatchJSON(`{"verified": true}`))
 
-				newUser := ScimUser{}
+				newUser := User{}
 				json.Unmarshal([]byte(userBytes), &newUser)
 				Expect(*newUser.Verified).To(BeTrue())
 			})
 
 			It("correctly hides unset values", func() {
-				user := ScimUser{}
+				user := User{}
 				json.Unmarshal([]byte("{}"), &user)
 				Expect(user.Verified).To(BeNil())
 
@@ -68,21 +68,21 @@ var _ = Describe("Users", func() {
 
 		Describe("Active", func() {
 			It("correctly shows false boolean values", func() {
-				user := ScimUser{Active: NewFalseP()}
+				user := User{Active: NewFalseP()}
 				userBytes, _ := json.Marshal(&user)
 				Expect(string(userBytes)).To(MatchJSON(`{"active": false}`))
 
-				newUser := ScimUser{}
+				newUser := User{}
 				json.Unmarshal([]byte(userBytes), &newUser)
 				Expect(*newUser.Active).To(BeFalse())
 			})
 
 			It("correctly shows true values", func() {
-				user := ScimUser{Active: NewTrueP()}
+				user := User{Active: NewTrueP()}
 				userBytes, _ := json.Marshal(&user)
 				Expect(string(userBytes)).To(MatchJSON(`{"active": true}`))
 
-				newUser := ScimUser{}
+				newUser := User{}
 				json.Unmarshal([]byte(userBytes), &newUser)
 				Expect(*newUser.Active).To(BeTrue())
 			})
@@ -90,27 +90,27 @@ var _ = Describe("Users", func() {
 
 		Describe("Emails", func() {
 			It("correctly shows false boolean values", func() {
-				user := ScimUser{}
-				email := ScimUserEmail{"foo@bar.com", NewFalseP()}
-				user.Emails = []ScimUserEmail{email}
+				user := User{}
+				email := Email{Value: "foo@bar.com", Primary: NewFalseP()}
+				user.Emails = []Email{email}
 
 				userBytes, _ := json.Marshal(&user)
 				Expect(string(userBytes)).To(MatchJSON(`{"emails": [ { "value": "foo@bar.com", "primary": false } ]}`))
 
-				newUser := ScimUser{}
+				newUser := User{}
 				json.Unmarshal([]byte(userBytes), &newUser)
 				Expect(*newUser.Emails[0].Primary).To(BeFalse())
 			})
 
 			It("correctly shows true values", func() {
-				user := ScimUser{}
-				email := ScimUserEmail{"foo@bar.com", NewTrueP()}
-				user.Emails = []ScimUserEmail{email}
+				user := User{}
+				email := Email{Value: "foo@bar.com", Primary: NewTrueP()}
+				user.Emails = []Email{email}
 
 				userBytes, _ := json.Marshal(&user)
 				Expect(string(userBytes)).To(MatchJSON(`{"emails": [ { "value": "foo@bar.com", "primary": true } ]}`))
 
-				newUser := ScimUser{}
+				newUser := User{}
 				json.Unmarshal([]byte(userBytes), &newUser)
 				Expect(*newUser.Emails[0].Primary).To(BeTrue())
 			})
@@ -129,7 +129,7 @@ var _ = Describe("Users", func() {
 			user, _ := um.Get("fb5f32e1-5cb3-49e6-93df-6df9c8c8bd70")
 
 			Expect(user.ID).To(Equal("fb5f32e1-5cb3-49e6-93df-6df9c8c8bd70"))
-			Expect(user.ExternalId).To(Equal("marcus-user"))
+			Expect(user.ExternalID).To(Equal("marcus-user"))
 			Expect(user.Meta.Created).To(Equal("2017-01-15T16:54:15.677Z"))
 			Expect(user.Meta.LastModified).To(Equal("2017-08-15T16:54:15.677Z"))
 			Expect(user.Meta.Version).To(Equal(1))
@@ -144,8 +144,8 @@ var _ = Describe("Users", func() {
 			Expect(user.Groups[1].Display).To(Equal("philosophy.write"))
 			Expect(user.Groups[1].Type).To(Equal("DIRECT"))
 			Expect(user.Groups[1].Value).To(Equal("110b2434-4a30-439b-b5fc-f4cf47fc04f0"))
-			Expect(user.Approvals[0].UserId).To(Equal("fb5f32e1-5cb3-49e6-93df-6df9c8c8bd70"))
-			Expect(user.Approvals[0].ClientId).To(Equal("shinyclient"))
+			Expect(user.Approvals[0].UserID).To(Equal("fb5f32e1-5cb3-49e6-93df-6df9c8c8bd70"))
+			Expect(user.Approvals[0].ClientID).To(Equal("shinyclient"))
 			Expect(user.Approvals[0].ExpiresAt).To(Equal("2017-08-15T16:54:25.765Z"))
 			Expect(user.Approvals[0].LastUpdatedAt).To(Equal("2017-08-15T16:54:15.765Z"))
 			Expect(user.Approvals[0].Scope).To(Equal("philosophy.read"))
@@ -154,7 +154,7 @@ var _ = Describe("Users", func() {
 			Expect(*user.Active).To(Equal(true))
 			Expect(*user.Verified).To(Equal(true))
 			Expect(user.Origin).To(Equal("uaa"))
-			Expect(user.ZoneId).To(Equal("uaa"))
+			Expect(user.ZoneID).To(Equal("uaa"))
 			Expect(user.PasswordLastModified).To(Equal("2017-08-15T16:54:15.000Z"))
 			Expect(user.PreviousLogonTime).To(Equal(1502816055768))
 			Expect(user.LastLogonTime).To(Equal(1502816055768))
@@ -260,13 +260,13 @@ var _ = Describe("Users", func() {
 			It("returns an error", func() {
 				_, err := um.GetByUsername("", "", "")
 				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(Equal("Username may not be blank."))
+				Expect(err.Error()).To(Equal("username may not be blank"))
 			})
 		})
 
 		Context("when an origin is specified", func() {
 			It("looks up a user with SCIM filter", func() {
-				user := ScimUser{Username: "marcus", Origin: "uaa"}
+				user := User{Username: "marcus", Origin: "uaa"}
 				response := PaginatedResponse(user)
 
 				uaaServer.RouteToHandler("GET", "/Users", ghttp.CombineHandlers(
@@ -306,13 +306,13 @@ var _ = Describe("Users", func() {
 
 				_, err := um.GetByUsername("marcus", "uaa", "")
 				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(Equal(`User marcus not found in origin uaa`))
+				Expect(err.Error()).To(Equal(`user marcus not found in origin uaa`))
 			})
 		})
 
 		Context("when no origin is specified", func() {
 			It("looks up a user with a SCIM filter", func() {
-				user := ScimUser{Username: "marcus", Origin: "uaa"}
+				user := User{Username: "marcus", Origin: "uaa"}
 				response := PaginatedResponse(user)
 
 				uaaServer.RouteToHandler("GET", "/Users", ghttp.CombineHandlers(
@@ -350,13 +350,13 @@ var _ = Describe("Users", func() {
 
 				_, err := um.GetByUsername("marcus", "", "")
 				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(Equal(`User marcus not found.`))
+				Expect(err.Error()).To(Equal(`user marcus not found`))
 			})
 
 			It("returns an error when username found in multiple origins", func() {
-				user1 := ScimUser{Username: "marcus", Origin: "uaa"}
-				user2 := ScimUser{Username: "marcus", Origin: "ldap"}
-				user3 := ScimUser{Username: "marcus", Origin: "okta"}
+				user1 := User{Username: "marcus", Origin: "uaa"}
+				user2 := User{Username: "marcus", Origin: "ldap"}
+				user3 := User{Username: "marcus", Origin: "okta"}
 				response := PaginatedResponse(user1, user2, user3)
 
 				uaaServer.RouteToHandler("GET", "/Users", ghttp.CombineHandlers(
@@ -375,7 +375,7 @@ var _ = Describe("Users", func() {
 		Context("when attributes are specified", func() {
 			It("adds them to the GET request", func() {
 				uaaServer.RouteToHandler("GET", "/Users", ghttp.CombineHandlers(
-					ghttp.RespondWith(http.StatusOK, PaginatedResponse(ScimUser{Username: "marcus", Origin: "uaa"})),
+					ghttp.RespondWith(http.StatusOK, PaginatedResponse(User{Username: "marcus", Origin: "uaa"})),
 					ghttp.VerifyRequest("GET", "/Users", "filter=userName+eq+%22marcus%22&attributes=userName%2Cemails"),
 					ghttp.VerifyHeaderKV("Accept", "application/json"),
 					ghttp.VerifyHeaderKV("Authorization", "bearer access_token"),
@@ -387,7 +387,7 @@ var _ = Describe("Users", func() {
 
 			It("adds them to the GET request", func() {
 				uaaServer.RouteToHandler("GET", "/Users", ghttp.CombineHandlers(
-					ghttp.RespondWith(http.StatusOK, PaginatedResponse(ScimUser{Username: "marcus", Origin: "uaa"})),
+					ghttp.RespondWith(http.StatusOK, PaginatedResponse(User{Username: "marcus", Origin: "uaa"})),
 					ghttp.VerifyRequest("GET", "/Users", "filter=userName+eq+%22marcus%22+and+origin+eq+%22uaa%22&attributes=userName%2Cemails"),
 					ghttp.VerifyHeaderKV("Accept", "application/json"),
 					ghttp.VerifyHeaderKV("Authorization", "bearer access_token"),
@@ -466,7 +466,7 @@ var _ = Describe("Users", func() {
 				ghttp.VerifyRequest("GET", "/Users", "sortOrder=ascending"),
 			))
 
-			_, err := um.List("", "", "", SORT_ASCENDING, 0, 0)
+			_, err := um.List("", "", "", SortAscending, 0, 0)
 			Expect(err).NotTo(HaveOccurred())
 		})
 
@@ -508,14 +508,14 @@ var _ = Describe("Users", func() {
 	})
 
 	Describe("UserManager#Create", func() {
-		var user ScimUser
+		var user User
 
 		BeforeEach(func() {
-			user = ScimUser{
+			user = User{
 				Username: "marcus@stoicism.com",
 				Active:   NewTrueP(),
 			}
-			user.Name = &ScimUserName{GivenName: "Marcus", FamilyName: "Aurelius"}
+			user.Name = &UserName{GivenName: "Marcus", FamilyName: "Aurelius"}
 		})
 
 		It("performs POST with user data and bearer token", func() {
@@ -539,10 +539,10 @@ var _ = Describe("Users", func() {
 				ghttp.RespondWith(http.StatusOK, MarcusUserResponse),
 			))
 
-			user, _ := um.Create(user)
+			user, _ = um.Create(user)
 
 			Expect(user.Username).To(Equal("marcus@stoicism.com"))
-			Expect(user.ExternalId).To(Equal("marcus-user"))
+			Expect(user.ExternalID).To(Equal("marcus-user"))
 		})
 
 		It("returns error when response cannot be parsed", func() {
@@ -569,14 +569,14 @@ var _ = Describe("Users", func() {
 	})
 
 	Describe("UserManager#Update", func() {
-		var user ScimUser
+		var user User
 
 		BeforeEach(func() {
-			user = ScimUser{
+			user = User{
 				Username: "marcus@stoicism.com",
 				Active:   NewTrueP(),
 			}
-			user.Name = &ScimUserName{GivenName: "Marcus", FamilyName: "Aurelius"}
+			user.Name = &UserName{GivenName: "Marcus", FamilyName: "Aurelius"}
 		})
 
 		It("performs PUT with user data and bearer token", func() {
@@ -600,10 +600,10 @@ var _ = Describe("Users", func() {
 				ghttp.RespondWith(http.StatusOK, MarcusUserResponse),
 			))
 
-			user, _ := um.Update(user)
+			user, _ = um.Update(user)
 
 			Expect(user.Username).To(Equal("marcus@stoicism.com"))
-			Expect(user.ExternalId).To(Equal("marcus-user"))
+			Expect(user.ExternalID).To(Equal("marcus-user"))
 		})
 
 		It("returns error when response cannot be parsed", func() {
@@ -652,7 +652,7 @@ var _ = Describe("Users", func() {
 			user, _ := um.Delete("fb5f32e1-5cb3-49e6-93df-6df9c8c8bd70")
 
 			Expect(user.Username).To(Equal("marcus@stoicism.com"))
-			Expect(user.ExternalId).To(Equal("marcus-user"))
+			Expect(user.ExternalID).To(Equal("marcus-user"))
 		})
 
 		It("returns error when response cannot be parsed", func() {

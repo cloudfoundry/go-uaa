@@ -15,14 +15,14 @@ var _ = Describe("HttpGetter", func() {
 		server       *ghttp.Server
 		client       *http.Client
 		config       Config
-		responseJson string
+		responseJSON string
 	)
 
 	BeforeEach(func() {
 		server = ghttp.NewServer()
 		client = &http.Client{}
 		config = NewConfigWithServerURL(server.URL())
-		responseJson = `{"foo": "bar"}`
+		responseJSON = `{"foo": "bar"}`
 	})
 
 	AfterEach(func() {
@@ -33,23 +33,23 @@ var _ = Describe("HttpGetter", func() {
 		Describe("Get", func() {
 			It("calls an endpoint with Accept application/json header", func() {
 				server.RouteToHandler("GET", "/testPath", ghttp.CombineHandlers(
-					ghttp.RespondWith(200, responseJson),
+					ghttp.RespondWith(200, responseJSON),
 					ghttp.VerifyRequest("GET", "/testPath", "someQueryParam=true"),
 					ghttp.VerifyHeaderKV("Accept", "application/json"),
 				))
 
-				UnauthenticatedRequester{}.Get(client, config, "/testPath", "someQueryParam=true")
+				UnauthenticatedRequestor{}.Get(client, config, "/testPath", "someQueryParam=true")
 
 				Expect(server.ReceivedRequests()).To(HaveLen(1))
 			})
 
 			It("supports zone switching", func() {
 				server.RouteToHandler("GET", "/testPath", ghttp.CombineHandlers(
-					ghttp.RespondWith(200, responseJson),
+					ghttp.RespondWith(200, responseJSON),
 					ghttp.VerifyHeaderKV("X-Identity-Zone-Subdomain", "twilight-zone"),
 				))
 				config.ZoneSubdomain = "twilight-zone"
-				UnauthenticatedRequester{}.Get(client, config, "/testPath", "someQueryParam=true")
+				UnauthenticatedRequestor{}.Get(client, config, "/testPath", "someQueryParam=true")
 			})
 
 			It("returns helpful error when GET request fails", func() {
@@ -59,7 +59,7 @@ var _ = Describe("HttpGetter", func() {
 					ghttp.VerifyHeaderKV("Accept", "application/json"),
 				))
 
-				_, err := UnauthenticatedRequester{}.Get(client, config, "/testPath", "someQueryParam=true")
+				_, err := UnauthenticatedRequestor{}.Get(client, config, "/testPath", "someQueryParam=true")
 
 				Expect(server.ReceivedRequests()).To(HaveLen(1))
 				Expect(err).NotTo(BeNil())
@@ -70,23 +70,23 @@ var _ = Describe("HttpGetter", func() {
 		Describe("Delete", func() {
 			It("calls an endpoint with Accept application/json header", func() {
 				server.RouteToHandler("DELETE", "/testPath", ghttp.CombineHandlers(
-					ghttp.RespondWith(200, responseJson),
+					ghttp.RespondWith(200, responseJSON),
 					ghttp.VerifyRequest("DELETE", "/testPath", "someQueryParam=true"),
 					ghttp.VerifyHeaderKV("Accept", "application/json"),
 				))
 
-				UnauthenticatedRequester{}.Delete(client, config, "/testPath", "someQueryParam=true")
+				UnauthenticatedRequestor{}.Delete(client, config, "/testPath", "someQueryParam=true")
 
 				Expect(server.ReceivedRequests()).To(HaveLen(1))
 			})
 
 			It("supports zone switching", func() {
 				server.RouteToHandler("DELETE", "/testPath", ghttp.CombineHandlers(
-					ghttp.RespondWith(200, responseJson),
+					ghttp.RespondWith(200, responseJSON),
 					ghttp.VerifyHeaderKV("X-Identity-Zone-Subdomain", "twilight-zone"),
 				))
 				config.ZoneSubdomain = "twilight-zone"
-				UnauthenticatedRequester{}.Delete(client, config, "/testPath", "someQueryParam=true")
+				UnauthenticatedRequestor{}.Delete(client, config, "/testPath", "someQueryParam=true")
 			})
 
 			It("returns helpful error when DELETE request fails", func() {
@@ -96,7 +96,7 @@ var _ = Describe("HttpGetter", func() {
 					ghttp.VerifyHeaderKV("Accept", "application/json"),
 				))
 
-				_, err := UnauthenticatedRequester{}.Delete(client, config, "/testPath", "someQueryParam=true")
+				_, err := UnauthenticatedRequestor{}.Delete(client, config, "/testPath", "someQueryParam=true")
 
 				Expect(server.ReceivedRequests()).To(HaveLen(1))
 				Expect(err).NotTo(BeNil())
@@ -106,7 +106,7 @@ var _ = Describe("HttpGetter", func() {
 
 		Describe("PostForm", func() {
 			It("calls an endpoint with correct body and headers", func() {
-				responseJson = `{
+				responseJSON = `{
 				  "access_token" : "bc4885d950854fed9a938e96b13ca519",
 				  "token_type" : "bearer",
 				  "expires_in" : 43199,
@@ -115,7 +115,7 @@ var _ = Describe("HttpGetter", func() {
 				}`
 
 				server.RouteToHandler("POST", "/oauth/token", ghttp.CombineHandlers(
-					ghttp.RespondWith(200, responseJson),
+					ghttp.RespondWith(200, responseJSON),
 					ghttp.VerifyRequest("POST", "/oauth/token", ""),
 					ghttp.VerifyBody([]byte("hello=world")),
 					ghttp.VerifyHeaderKV("Accept", "application/json"),
@@ -123,7 +123,7 @@ var _ = Describe("HttpGetter", func() {
 				))
 
 				body := map[string]string{"hello": "world"}
-				returnedBytes, _ := UnauthenticatedRequester{}.PostForm(client, config, "/oauth/token", "", body)
+				returnedBytes, _ := UnauthenticatedRequestor{}.PostForm(client, config, "/oauth/token", "", body)
 				parsedResponse := string(returnedBytes)
 
 				Expect(server.ReceivedRequests()).To(HaveLen(1))
@@ -132,11 +132,11 @@ var _ = Describe("HttpGetter", func() {
 
 			It("treats 201 as success", func() {
 				server.RouteToHandler("POST", "/oauth/token", ghttp.CombineHandlers(
-					ghttp.RespondWith(201, responseJson),
+					ghttp.RespondWith(201, responseJSON),
 					ghttp.VerifyRequest("POST", "/oauth/token", ""),
 				))
 
-				_, err := UnauthenticatedRequester{}.PostForm(client, config, "/oauth/token", "", map[string]string{})
+				_, err := UnauthenticatedRequestor{}.PostForm(client, config, "/oauth/token", "", map[string]string{})
 
 				Expect(server.ReceivedRequests()).To(HaveLen(1))
 				Expect(err).To(BeNil())
@@ -144,11 +144,11 @@ var _ = Describe("HttpGetter", func() {
 
 			It("treats 405 as error", func() {
 				server.RouteToHandler("PUT", "/oauth/token/foo/secret", ghttp.CombineHandlers(
-					ghttp.RespondWith(405, responseJson),
+					ghttp.RespondWith(405, responseJSON),
 					ghttp.VerifyRequest("PUT", "/oauth/token/foo/secret", ""),
 				))
 
-				_, err := UnauthenticatedRequester{}.PutJson(client, config, "/oauth/token/foo/secret", "", map[string]string{})
+				_, err := UnauthenticatedRequestor{}.PutJSON(client, config, "/oauth/token/foo/secret", "", map[string]string{})
 
 				Expect(server.ReceivedRequests()).To(HaveLen(1))
 				Expect(err).NotTo(BeNil())
@@ -160,7 +160,7 @@ var _ = Describe("HttpGetter", func() {
 					ghttp.VerifyRequest("POST", "/oauth/token", ""),
 				))
 
-				_, err := UnauthenticatedRequester{}.PostForm(client, config, "/oauth/token", "", map[string]string{})
+				_, err := UnauthenticatedRequestor{}.PostForm(client, config, "/oauth/token", "", map[string]string{})
 
 				Expect(server.ReceivedRequests()).To(HaveLen(1))
 				Expect(err).NotTo(BeNil())
@@ -169,25 +169,25 @@ var _ = Describe("HttpGetter", func() {
 
 			It("supports zone switching", func() {
 				server.RouteToHandler("POST", "/oauth/token", ghttp.CombineHandlers(
-					ghttp.RespondWith(201, responseJson),
+					ghttp.RespondWith(201, responseJSON),
 					ghttp.VerifyRequest("POST", "/oauth/token", ""),
 					ghttp.VerifyHeaderKV("X-Identity-Zone-Subdomain", "twilight-zone"),
 				))
 
 				config.ZoneSubdomain = "twilight-zone"
-				_, err := UnauthenticatedRequester{}.PostForm(client, config, "/oauth/token", "", map[string]string{})
+				_, err := UnauthenticatedRequestor{}.PostForm(client, config, "/oauth/token", "", map[string]string{})
 
 				Expect(server.ReceivedRequests()).To(HaveLen(1))
 				Expect(err).To(BeNil())
 			})
 		})
 
-		Describe("PostJson", func() {
+		Describe("PostJSON", func() {
 			It("calls an endpoint with correct body and headers", func() {
-				responseJson = `{ "status" : "great successs" }`
+				responseJSON = `{ "status" : "great successs" }`
 
 				server.RouteToHandler("POST", "/foo", ghttp.CombineHandlers(
-					ghttp.RespondWith(200, responseJson),
+					ghttp.RespondWith(200, responseJSON),
 					ghttp.VerifyRequest("POST", "/foo", ""),
 					ghttp.VerifyHeaderKV("Accept", "application/json"),
 					ghttp.VerifyHeaderKV("Content-Type", "application/json"),
@@ -196,7 +196,7 @@ var _ = Describe("HttpGetter", func() {
 
 				bodyObj := TestData{Field1: "hello", Field2: "world"}
 
-				returnedBytes, _ := UnauthenticatedRequester{}.PostJson(client, config, "/foo", "", bodyObj)
+				returnedBytes, _ := UnauthenticatedRequestor{}.PostJSON(client, config, "/foo", "", bodyObj)
 				parsedResponse := string(returnedBytes)
 
 				Expect(server.ReceivedRequests()).To(HaveLen(1))
@@ -210,7 +210,7 @@ var _ = Describe("HttpGetter", func() {
 				))
 
 				bodyObj := TestData{Field1: "hello", Field2: "world"}
-				_, err := UnauthenticatedRequester{}.PostJson(client, config, "/foo", "", bodyObj)
+				_, err := UnauthenticatedRequestor{}.PostJSON(client, config, "/foo", "", bodyObj)
 
 				Expect(server.ReceivedRequests()).To(HaveLen(1))
 				Expect(err).NotTo(BeNil())
@@ -219,25 +219,25 @@ var _ = Describe("HttpGetter", func() {
 
 			It("supports zone switching", func() {
 				server.RouteToHandler("POST", "/oauth/token", ghttp.CombineHandlers(
-					ghttp.RespondWith(201, responseJson),
+					ghttp.RespondWith(201, responseJSON),
 					ghttp.VerifyRequest("POST", "/oauth/token", ""),
 					ghttp.VerifyHeaderKV("X-Identity-Zone-Subdomain", "twilight-zone"),
 				))
 
 				config.ZoneSubdomain = "twilight-zone"
-				_, err := UnauthenticatedRequester{}.PostJson(client, config, "/oauth/token", "", map[string]string{})
+				_, err := UnauthenticatedRequestor{}.PostJSON(client, config, "/oauth/token", "", map[string]string{})
 
 				Expect(server.ReceivedRequests()).To(HaveLen(1))
 				Expect(err).To(BeNil())
 			})
 		})
 
-		Describe("PutJson", func() {
+		Describe("PutJSON", func() {
 			It("calls an endpoint with correct body and headers", func() {
-				responseJson = `{ "status" : "great successs" }`
+				responseJSON = `{ "status" : "great successs" }`
 
 				server.RouteToHandler("PUT", "/foo", ghttp.CombineHandlers(
-					ghttp.RespondWith(200, responseJson),
+					ghttp.RespondWith(200, responseJSON),
 					ghttp.VerifyRequest("PUT", "/foo", ""),
 					ghttp.VerifyHeaderKV("Accept", "application/json"),
 					ghttp.VerifyHeaderKV("Content-Type", "application/json"),
@@ -246,7 +246,7 @@ var _ = Describe("HttpGetter", func() {
 
 				bodyObj := TestData{Field1: "hello", Field2: "world"}
 
-				returnedBytes, _ := UnauthenticatedRequester{}.PutJson(client, config, "/foo", "", bodyObj)
+				returnedBytes, _ := UnauthenticatedRequestor{}.PutJSON(client, config, "/foo", "", bodyObj)
 				parsedResponse := string(returnedBytes)
 
 				Expect(server.ReceivedRequests()).To(HaveLen(1))
@@ -260,7 +260,7 @@ var _ = Describe("HttpGetter", func() {
 				))
 
 				bodyObj := TestData{Field1: "hello", Field2: "world"}
-				_, err := UnauthenticatedRequester{}.PutJson(client, config, "/foo", "", bodyObj)
+				_, err := UnauthenticatedRequestor{}.PutJSON(client, config, "/foo", "", bodyObj)
 
 				Expect(server.ReceivedRequests()).To(HaveLen(1))
 				Expect(err).NotTo(BeNil())
@@ -268,16 +268,16 @@ var _ = Describe("HttpGetter", func() {
 			})
 
 			It("supports zone switching", func() {
-				responseJson = `{ "status" : "great successs" }`
+				responseJSON = `{ "status" : "great successs" }`
 
 				server.RouteToHandler("PUT", "/foo", ghttp.CombineHandlers(
-					ghttp.RespondWith(200, responseJson),
+					ghttp.RespondWith(200, responseJSON),
 					ghttp.VerifyRequest("PUT", "/foo", ""),
 					ghttp.VerifyHeaderKV("X-Identity-Zone-Subdomain", "twilight-zone"),
 				))
 
 				config.ZoneSubdomain = "twilight-zone"
-				UnauthenticatedRequester{}.PutJson(client, config, "/foo", "", TestData{Field1: "hello", Field2: "world"})
+				UnauthenticatedRequestor{}.PutJSON(client, config, "/foo", "", TestData{Field1: "hello", Field2: "world"})
 				Expect(server.ReceivedRequests()).To(HaveLen(1))
 			})
 		})
@@ -287,28 +287,28 @@ var _ = Describe("HttpGetter", func() {
 		Describe("Get", func() {
 			It("calls an endpoint with Accept and Authorization headers", func() {
 				server.RouteToHandler("GET", "/testPath", ghttp.CombineHandlers(
-					ghttp.RespondWith(200, responseJson),
+					ghttp.RespondWith(200, responseJSON),
 					ghttp.VerifyRequest("GET", "/testPath", "someQueryParam=true"),
 					ghttp.VerifyHeaderKV("Accept", "application/json"),
 					ghttp.VerifyHeaderKV("Authorization", "bearer access_token"),
 				))
 
 				config.AddContext(NewContextWithToken("access_token"))
-				AuthenticatedRequester{}.Get(client, config, "/testPath", "someQueryParam=true")
+				AuthenticatedRequestor{}.Get(client, config, "/testPath", "someQueryParam=true")
 
 				Expect(server.ReceivedRequests()).To(HaveLen(1))
 			})
 
 			It("supports zone switching", func() {
 				server.RouteToHandler("GET", "/testPath", ghttp.CombineHandlers(
-					ghttp.RespondWith(200, responseJson),
+					ghttp.RespondWith(200, responseJSON),
 					ghttp.VerifyRequest("GET", "/testPath", "someQueryParam=true"),
 					ghttp.VerifyHeaderKV("X-Identity-Zone-Subdomain", "twilight-zone"),
 				))
 
 				config.AddContext(NewContextWithToken("access_token"))
 				config.ZoneSubdomain = "twilight-zone"
-				AuthenticatedRequester{}.Get(client, config, "/testPath", "someQueryParam=true")
+				AuthenticatedRequestor{}.Get(client, config, "/testPath", "someQueryParam=true")
 
 				Expect(server.ReceivedRequests()).To(HaveLen(1))
 			})
@@ -321,7 +321,7 @@ var _ = Describe("HttpGetter", func() {
 				))
 
 				config.AddContext(NewContextWithToken("access_token"))
-				_, err := AuthenticatedRequester{}.Get(client, config, "/testPath", "someQueryParam=true")
+				_, err := AuthenticatedRequestor{}.Get(client, config, "/testPath", "someQueryParam=true")
 
 				Expect(server.ReceivedRequests()).To(HaveLen(1))
 				Expect(err).NotTo(BeNil())
@@ -330,7 +330,7 @@ var _ = Describe("HttpGetter", func() {
 
 			It("returns a helpful error when no token in context", func() {
 				config.AddContext(NewContextWithToken(""))
-				_, err := AuthenticatedRequester{}.Get(client, config, "/testPath", "someQueryParam=true")
+				_, err := AuthenticatedRequestor{}.Get(client, config, "/testPath", "someQueryParam=true")
 
 				Expect(server.ReceivedRequests()).To(HaveLen(0))
 				Expect(err).NotTo(BeNil())
@@ -341,28 +341,28 @@ var _ = Describe("HttpGetter", func() {
 		Describe("Delete", func() {
 			It("calls an endpoint with Accept and Authorization headers", func() {
 				server.RouteToHandler("DELETE", "/testPath", ghttp.CombineHandlers(
-					ghttp.RespondWith(200, responseJson),
+					ghttp.RespondWith(200, responseJSON),
 					ghttp.VerifyRequest("DELETE", "/testPath", "someQueryParam=true"),
 					ghttp.VerifyHeaderKV("Accept", "application/json"),
 					ghttp.VerifyHeaderKV("Authorization", "bearer access_token"),
 				))
 
 				config.AddContext(NewContextWithToken("access_token"))
-				AuthenticatedRequester{}.Delete(client, config, "/testPath", "someQueryParam=true")
+				AuthenticatedRequestor{}.Delete(client, config, "/testPath", "someQueryParam=true")
 
 				Expect(server.ReceivedRequests()).To(HaveLen(1))
 			})
 
 			It("supports zone switching", func() {
 				server.RouteToHandler("DELETE", "/testPath", ghttp.CombineHandlers(
-					ghttp.RespondWith(200, responseJson),
+					ghttp.RespondWith(200, responseJSON),
 					ghttp.VerifyRequest("DELETE", "/testPath", "someQueryParam=true"),
 					ghttp.VerifyHeaderKV("X-Identity-Zone-Subdomain", "twilight-zone"),
 				))
 
 				config.AddContext(NewContextWithToken("access_token"))
 				config.ZoneSubdomain = "twilight-zone"
-				AuthenticatedRequester{}.Delete(client, config, "/testPath", "someQueryParam=true")
+				AuthenticatedRequestor{}.Delete(client, config, "/testPath", "someQueryParam=true")
 
 				Expect(server.ReceivedRequests()).To(HaveLen(1))
 			})
@@ -375,7 +375,7 @@ var _ = Describe("HttpGetter", func() {
 				))
 
 				config.AddContext(NewContextWithToken("access_token"))
-				_, err := AuthenticatedRequester{}.Delete(client, config, "/testPath", "someQueryParam=true")
+				_, err := AuthenticatedRequestor{}.Delete(client, config, "/testPath", "someQueryParam=true")
 
 				Expect(server.ReceivedRequests()).To(HaveLen(1))
 				Expect(err).NotTo(BeNil())
@@ -384,7 +384,7 @@ var _ = Describe("HttpGetter", func() {
 
 			It("returns a helpful error when no token in context", func() {
 				config.AddContext(NewContextWithToken(""))
-				_, err := AuthenticatedRequester{}.Delete(client, config, "/testPath", "someQueryParam=true")
+				_, err := AuthenticatedRequestor{}.Delete(client, config, "/testPath", "someQueryParam=true")
 
 				Expect(server.ReceivedRequests()).To(HaveLen(0))
 				Expect(err).NotTo(BeNil())
@@ -394,7 +394,7 @@ var _ = Describe("HttpGetter", func() {
 
 		Describe("PostForm", func() {
 			It("calls an endpoint with correct body and headers", func() {
-				responseJson = `{
+				responseJSON = `{
 				  "access_token" : "bc4885d950854fed9a938e96b13ca519",
 				  "token_type" : "bearer",
 				  "expires_in" : 43199,
@@ -403,7 +403,7 @@ var _ = Describe("HttpGetter", func() {
 				}`
 
 				server.RouteToHandler("POST", "/oauth/token", ghttp.CombineHandlers(
-					ghttp.RespondWith(200, responseJson),
+					ghttp.RespondWith(200, responseJSON),
 					ghttp.VerifyRequest("POST", "/oauth/token", ""),
 					ghttp.VerifyBody([]byte("hello=world")),
 					ghttp.VerifyHeaderKV("Authorization", "bearer access_token"),
@@ -414,7 +414,7 @@ var _ = Describe("HttpGetter", func() {
 				body := map[string]string{"hello": "world"}
 				config.AddContext(NewContextWithToken("access_token"))
 
-				returnedBytes, _ := AuthenticatedRequester{}.PostForm(client, config, "/oauth/token", "", body)
+				returnedBytes, _ := AuthenticatedRequestor{}.PostForm(client, config, "/oauth/token", "", body)
 				parsedResponse := string(returnedBytes)
 
 				Expect(server.ReceivedRequests()).To(HaveLen(1))
@@ -430,7 +430,7 @@ var _ = Describe("HttpGetter", func() {
 				config.AddContext(NewContextWithToken("access_token"))
 				config.ZoneSubdomain = "twilight-zone"
 
-				AuthenticatedRequester{}.PostForm(client, config, "/oauth/token", "", map[string]string{})
+				AuthenticatedRequestor{}.PostForm(client, config, "/oauth/token", "", map[string]string{})
 				Expect(server.ReceivedRequests()).To(HaveLen(1))
 			})
 
@@ -441,7 +441,7 @@ var _ = Describe("HttpGetter", func() {
 				))
 
 				config.AddContext(NewContextWithToken("access_token"))
-				_, err := AuthenticatedRequester{}.PostForm(client, config, "/oauth/token", "", map[string]string{})
+				_, err := AuthenticatedRequestor{}.PostForm(client, config, "/oauth/token", "", map[string]string{})
 
 				Expect(server.ReceivedRequests()).To(HaveLen(1))
 				Expect(err).NotTo(BeNil())
@@ -450,7 +450,7 @@ var _ = Describe("HttpGetter", func() {
 
 			It("returns a helpful error when no token in context", func() {
 				config.AddContext(NewContextWithToken(""))
-				_, err := AuthenticatedRequester{}.PostForm(client, config, "/oauth/token", "", map[string]string{})
+				_, err := AuthenticatedRequestor{}.PostForm(client, config, "/oauth/token", "", map[string]string{})
 
 				Expect(server.ReceivedRequests()).To(HaveLen(0))
 				Expect(err).NotTo(BeNil())
@@ -458,12 +458,12 @@ var _ = Describe("HttpGetter", func() {
 			})
 		})
 
-		Describe("PostJson", func() {
+		Describe("PostJSON", func() {
 			It("calls an endpoint with correct body and headers", func() {
-				responseJson = `{ "status" : "great successs" }`
+				responseJSON = `{ "status" : "great successs" }`
 
 				server.RouteToHandler("POST", "/foo", ghttp.CombineHandlers(
-					ghttp.RespondWith(200, responseJson),
+					ghttp.RespondWith(200, responseJSON),
 					ghttp.VerifyRequest("POST", "/foo", ""),
 					ghttp.VerifyHeaderKV("Authorization", "bearer access_token"),
 					ghttp.VerifyHeaderKV("Accept", "application/json"),
@@ -474,7 +474,7 @@ var _ = Describe("HttpGetter", func() {
 				bodyObj := TestData{Field1: "hello", Field2: "world"}
 				config.AddContext(NewContextWithToken("access_token"))
 
-				returnedBytes, _ := AuthenticatedRequester{}.PostJson(client, config, "/foo", "", bodyObj)
+				returnedBytes, _ := AuthenticatedRequestor{}.PostJSON(client, config, "/foo", "", bodyObj)
 				parsedResponse := string(returnedBytes)
 
 				Expect(server.ReceivedRequests()).To(HaveLen(1))
@@ -489,7 +489,7 @@ var _ = Describe("HttpGetter", func() {
 
 				config.AddContext(NewContextWithToken("access_token"))
 				bodyObj := TestData{Field1: "hello", Field2: "world"}
-				_, err := AuthenticatedRequester{}.PostJson(client, config, "/foo", "", bodyObj)
+				_, err := AuthenticatedRequestor{}.PostJSON(client, config, "/foo", "", bodyObj)
 
 				Expect(server.ReceivedRequests()).To(HaveLen(1))
 				Expect(err).NotTo(BeNil())
@@ -498,7 +498,7 @@ var _ = Describe("HttpGetter", func() {
 
 			It("returns a helpful error when no token in context", func() {
 				config.AddContext(NewContextWithToken(""))
-				_, err := AuthenticatedRequester{}.PostJson(client, config, "/foo", "", map[string]string{})
+				_, err := AuthenticatedRequestor{}.PostJSON(client, config, "/foo", "", map[string]string{})
 
 				Expect(server.ReceivedRequests()).To(HaveLen(0))
 				Expect(err).NotTo(BeNil())
@@ -506,12 +506,12 @@ var _ = Describe("HttpGetter", func() {
 			})
 		})
 
-		Describe("PutJson", func() {
+		Describe("PutJSON", func() {
 			It("calls an endpoint with correct body and headers", func() {
-				responseJson = `{ "status" : "great successs" }`
+				responseJSON = `{ "status" : "great successs" }`
 
 				server.RouteToHandler("PUT", "/foo", ghttp.CombineHandlers(
-					ghttp.RespondWith(200, responseJson),
+					ghttp.RespondWith(200, responseJSON),
 					ghttp.VerifyRequest("PUT", "/foo", ""),
 					ghttp.VerifyHeaderKV("Authorization", "bearer access_token"),
 					ghttp.VerifyHeaderKV("Accept", "application/json"),
@@ -522,7 +522,7 @@ var _ = Describe("HttpGetter", func() {
 				bodyObj := TestData{Field1: "hello", Field2: "world"}
 				config.AddContext(NewContextWithToken("access_token"))
 
-				returnedBytes, _ := AuthenticatedRequester{}.PutJson(client, config, "/foo", "", bodyObj)
+				returnedBytes, _ := AuthenticatedRequestor{}.PutJSON(client, config, "/foo", "", bodyObj)
 				parsedResponse := string(returnedBytes)
 
 				Expect(server.ReceivedRequests()).To(HaveLen(1))
@@ -537,7 +537,7 @@ var _ = Describe("HttpGetter", func() {
 
 				config.AddContext(NewContextWithToken("access_token"))
 				bodyObj := TestData{Field1: "hello", Field2: "world"}
-				_, err := AuthenticatedRequester{}.PutJson(client, config, "/foo", "", bodyObj)
+				_, err := AuthenticatedRequestor{}.PutJSON(client, config, "/foo", "", bodyObj)
 
 				Expect(server.ReceivedRequests()).To(HaveLen(1))
 				Expect(err).NotTo(BeNil())
@@ -553,14 +553,14 @@ var _ = Describe("HttpGetter", func() {
 
 				config.AddContext(NewContextWithToken("access_token"))
 				config.ZoneSubdomain = "twilight-zone"
-				_, err := AuthenticatedRequester{}.PutJson(client, config, "/foo", "", TestData{Field1: "hello", Field2: "world"})
+				_, err := AuthenticatedRequestor{}.PutJSON(client, config, "/foo", "", TestData{Field1: "hello", Field2: "world"})
 				Expect(err).To(BeNil())
 				Expect(server.ReceivedRequests()).To(HaveLen(1))
 			})
 
 			It("returns a helpful error when no token in context", func() {
 				config.AddContext(NewContextWithToken(""))
-				_, err := AuthenticatedRequester{}.PutJson(client, config, "/foo", "", map[string]string{})
+				_, err := AuthenticatedRequestor{}.PutJSON(client, config, "/foo", "", map[string]string{})
 
 				Expect(server.ReceivedRequests()).To(HaveLen(0))
 				Expect(err).NotTo(BeNil())

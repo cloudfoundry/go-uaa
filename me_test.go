@@ -15,14 +15,14 @@ var _ = Describe("Me", func() {
 		server       *ghttp.Server
 		client       *http.Client
 		config       Config
-		userinfoJson string
+		userinfoJSON string
 	)
 
 	BeforeEach(func() {
 		server = ghttp.NewServer()
 		client = &http.Client{}
 		config = NewConfigWithServerURL(server.URL())
-		userinfoJson = `{
+		userinfoJSON = `{
 		  "user_id": "d6ef6c2e-02f6-477a-a7c6-18e27f9a6e87",
 		  "sub": "d6ef6c2e-02f6-477a-a7c6-18e27f9a6e87",
 		  "user_name": "charlieb",
@@ -41,7 +41,7 @@ var _ = Describe("Me", func() {
 
 	It("calls the /userinfo endpoint", func() {
 		server.RouteToHandler("GET", "/userinfo", ghttp.CombineHandlers(
-			ghttp.RespondWith(200, userinfoJson),
+			ghttp.RespondWith(200, userinfoJSON),
 			ghttp.VerifyRequest("GET", "/userinfo", "scheme=openid"),
 			ghttp.VerifyHeaderKV("Accept", "application/json"),
 			ghttp.VerifyHeaderKV("Authorization", "bearer access_token"),
@@ -51,7 +51,7 @@ var _ = Describe("Me", func() {
 		userinfo, _ := Me(client, config)
 
 		Expect(server.ReceivedRequests()).To(HaveLen(1))
-		Expect(userinfo.UserId).To(Equal("d6ef6c2e-02f6-477a-a7c6-18e27f9a6e87"))
+		Expect(userinfo.UserID).To(Equal("d6ef6c2e-02f6-477a-a7c6-18e27f9a6e87"))
 		Expect(userinfo.Sub).To(Equal("d6ef6c2e-02f6-477a-a7c6-18e27f9a6e87"))
 		Expect(userinfo.Username).To(Equal("charlieb"))
 		Expect(userinfo.GivenName).To(Equal("Charlie"))

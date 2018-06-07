@@ -15,7 +15,7 @@ var _ = Describe("TokenKeys", func() {
 		server        *ghttp.Server
 		client        *http.Client
 		config        Config
-		tokenKeysJson string
+		tokenKeysJSON string
 	)
 
 	BeforeEach(func() {
@@ -30,7 +30,7 @@ var _ = Describe("TokenKeys", func() {
 
 	Context("when /token_keys endpoint is available", func() {
 		BeforeEach(func() {
-			tokenKeysJson = `{
+			tokenKeysJSON = `{
 			  "keys": [
 				{
 				  "kty": "RSA",
@@ -56,7 +56,7 @@ var _ = Describe("TokenKeys", func() {
 
 		It("calls the /token_keys endpoint", func() {
 			server.RouteToHandler("GET", "/token_keys", ghttp.CombineHandlers(
-				ghttp.RespondWith(200, tokenKeysJson),
+				ghttp.RespondWith(200, tokenKeysJSON),
 				ghttp.VerifyRequest("GET", "/token_keys", ""),
 				ghttp.VerifyHeaderKV("Accept", "application/json"),
 			))
@@ -89,7 +89,7 @@ var _ = Describe("TokenKeys", func() {
 	})
 
 	Context("for older UAAs missing the /token_keys endpoint", func() {
-		var tokenKeyJson string = `{
+		var tokenKeyJSON string = `{
 		  "kty": "RSA",
 		  "e": "AQAB",
 		  "use": "sig",
@@ -106,7 +106,7 @@ var _ = Describe("TokenKeys", func() {
 				ghttp.VerifyHeaderKV("Accept", "application/json"),
 			))
 			server.RouteToHandler("GET", "/token_key", ghttp.CombineHandlers(
-				ghttp.RespondWith(200, tokenKeyJson),
+				ghttp.RespondWith(200, tokenKeyJSON),
 				ghttp.VerifyRequest("GET", "/token_key"),
 				ghttp.VerifyHeaderKV("Accept", "application/json"),
 			))

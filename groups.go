@@ -9,45 +9,46 @@ import (
 	"strconv"
 )
 
-type ScimGroupMember struct {
+const groupResource string = "/Groups"
+
+// GroupMember is a user or a group.
+type GroupMember struct {
 	Origin string `json:"origin,omitempty"`
 	Type   string `json:"type,omitempty"`
 	Value  string `json:"value,omitempty"`
 }
 
-type ScimGroup struct {
-	ID          string            `json:"id,omitempty"`
-	Meta        *ScimMetaInfo     `json:"meta,omitempty"`
-	DisplayName string            `json:"displayName,omitempty"`
-	ZoneID      string            `json:"zoneId,omitempty"`
-	Description string            `json:"description,omitempty"`
-	Members     []ScimGroupMember `json:"members,omitempty"`
-	Schemas     []string          `json:"schemas,omitempty"`
+// Group is a container for users and groups.
+type Group struct {
+	ID          string        `json:"id,omitempty"`
+	Meta        *Meta         `json:"meta,omitempty"`
+	DisplayName string        `json:"displayName,omitempty"`
+	ZoneID      string        `json:"zoneID,omitempty"`
+	Description string        `json:"description,omitempty"`
+	Members     []GroupMember `json:"members,omitempty"`
+	Schemas     []string      `json:"schemas,omitempty"`
 }
 
+// PaginatedGroupList is the response from the API for a single page of groups.
 type PaginatedGroupList struct {
-	Resources    []ScimGroup `json:"resources"`
-	StartIndex   int32       `json:"startIndex"`
-	ItemsPerPage int32       `json:"itemsPerPage"`
-	TotalResults int32       `json:"totalResults"`
-	Schemas      []string    `json:"schemas"`
+	Resources    []Group  `json:"resources"`
+	StartIndex   int32    `json:"startIndex"`
+	ItemsPerPage int32    `json:"itemsPerPage"`
+	TotalResults int32    `json:"totalResults"`
+	Schemas      []string `json:"schemas"`
 }
 
+// GroupManager allows you to interact with the Groups resource.
 type GroupManager struct {
-	HttpClient *http.Client
+	HTTPClient *http.Client
 	Config     Config
 }
 
-type GroupMembership struct {
-	Origin string `json:"origin"`
-	Type   string `json:"type"`
-	Value  string `json:"value"`
-}
-
+// AddMember adds the user with the given ID to the group with the given ID.
 func (gm GroupManager) AddMember(groupID, userID string) error {
-	url := fmt.Sprintf("/Groups/%s/members", groupID)
-	membership := GroupMembership{Origin: "uaa", Type: "USER", Value: userID}
-	_, err := AuthenticatedRequester{}.PostJson(gm.HttpClient, gm.Config, url, "", membership)
+	url := fmt.Sprintf("%s/%s/members", groupResource, groupID)
+	membership := GroupMember{Origin: "uaa", Type: "USER", Value: userID}
+	_, err := AuthenticatedRequestor{}.PostJSON(gm.HTTPClient, gm.Config, url, "", membership)
 	if err != nil {
 		return err
 	}
@@ -55,41 +56,45 @@ func (gm GroupManager) AddMember(groupID, userID string) error {
 	return nil
 }
 
-func (gm GroupManager) Get(groupID string) (ScimGroup, error) {
-	url := "/Groups/" + groupID
-	bytes, err := AuthenticatedRequester{}.Get(gm.HttpClient, gm.Config, url, "")
+// Get the group with the given ID
+// http://docs.cloudfoundry.org/api/uaa/version/4.14.0/index.html#retrieve-2.
+func (gm GroupManager) Get(id string) (Group, error) {
+	url := "/Groups/" + id
+	bytes, err := AuthenticatedRequestor{}.Get(gm.HTTPClient, gm.Config, url, "")
 	if err != nil {
-		return ScimGroup{}, err
+		return Group{}, err
 	}
 
-	group := ScimGroup{}
+	group := Group{}
 	err = json.Unmarshal(bytes, &group)
 	if err != nil {
-		return ScimGroup{}, parseError(url, bytes)
+		return Group{}, parseError(url, bytes)
 	}
 
 	return group, err
 }
 
-func (gm GroupManager) GetByName(name, attributes string) (ScimGroup, error) {
+// GetByName gets the group with the given name
+// http://docs.cloudfoundry.org/api/uaa/version/4.14.0/index.html#list-4.
+func (gm GroupManager) GetByName(name, attributes string) (Group, error) {
 	if name == "" {
-		return ScimGroup{}, errors.New("Group name may not be blank.")
+		return Group{}, errors.New("group name may not be blank")
 	}
 
 	filter := fmt.Sprintf(`displayName eq "%v"`, name)
 	groups, err := gm.List(filter, "", attributes, "", 0, 0)
 	if err != nil {
-		return ScimGroup{}, err
+		return Group{}, err
 	}
 	if len(groups.Resources) == 0 {
-		return ScimGroup{}, fmt.Errorf("Group %v not found.", name)
+		return Group{}, fmt.Errorf("group %v not found", name)
 	}
 	return groups.Resources[0], nil
 }
 
-func (gm GroupManager) List(filter, sortBy, attributes string, sortOrder ScimSortOrder, startIdx, count int) (PaginatedGroupList, error) {
-	endpoint := "/Groups"
-
+// List groups
+// http://docs.cloudfoundry.org/api/uaa/version/4.14.0/index.html#list-4.
+func (gm GroupManager) List(filter, sortBy, attributes string, sortOrder SortOrder, startIdx, count int) (PaginatedGroupList, error) {
 	query := url.Values{}
 	if filter != "" {
 		query.Add("filter", filter)
@@ -110,7 +115,7 @@ func (gm GroupManager) List(filter, sortBy, attributes string, sortOrder ScimSor
 		query.Add("sortOrder", string(sortOrder))
 	}
 
-	bytes, err := AuthenticatedRequester{}.Get(gm.HttpClient, gm.Config, endpoint, query.Encode())
+	bytes, err := AuthenticatedRequestor{}.Get(gm.HTTPClient, gm.Config, groupResource, query.Encode())
 	if err != nil {
 		return PaginatedGroupList{}, err
 	}
@@ -118,55 +123,60 @@ func (gm GroupManager) List(filter, sortBy, attributes string, sortOrder ScimSor
 	groupsResp := PaginatedGroupList{}
 	err = json.Unmarshal(bytes, &groupsResp)
 	if err != nil {
-		return PaginatedGroupList{}, parseError(endpoint, bytes)
+		return PaginatedGroupList{}, parseError(groupResource, bytes)
 	}
 
 	return groupsResp, err
 }
 
-func (gm GroupManager) Create(toCreate ScimGroup) (ScimGroup, error) {
-	url := "/Groups"
-	bytes, err := AuthenticatedRequester{}.PostJson(gm.HttpClient, gm.Config, url, "", toCreate)
+// Create the given group
+// http://docs.cloudfoundry.org/api/uaa/version/4.14.0/index.html#create-5.
+func (gm GroupManager) Create(group Group) (Group, error) {
+	bytes, err := AuthenticatedRequestor{}.PostJSON(gm.HTTPClient, gm.Config, groupResource, "", group)
 	if err != nil {
-		return ScimGroup{}, err
+		return Group{}, err
 	}
 
-	created := ScimGroup{}
+	created := Group{}
 	err = json.Unmarshal(bytes, &created)
 	if err != nil {
-		return ScimGroup{}, parseError(url, bytes)
+		return Group{}, parseError(groupResource, bytes)
 	}
 
 	return created, err
 }
 
-func (gm GroupManager) Update(toUpdate ScimGroup) (ScimGroup, error) {
+// Update the given group
+// http://docs.cloudfoundry.org/api/uaa/version/4.14.0/index.html#update-5.
+func (gm GroupManager) Update(group Group) (Group, error) {
 	url := "/Groups"
-	bytes, err := AuthenticatedRequester{}.PutJson(gm.HttpClient, gm.Config, url, "", toUpdate)
+	bytes, err := AuthenticatedRequestor{}.PutJSON(gm.HTTPClient, gm.Config, url, "", group)
 	if err != nil {
-		return ScimGroup{}, err
+		return Group{}, err
 	}
 
-	updated := ScimGroup{}
+	updated := Group{}
 	err = json.Unmarshal(bytes, &updated)
 	if err != nil {
-		return ScimGroup{}, parseError(url, bytes)
+		return Group{}, parseError(url, bytes)
 	}
 
 	return updated, err
 }
 
-func (gm GroupManager) Delete(groupID string) (ScimGroup, error) {
+// Delete the group with the given ID
+// http://docs.cloudfoundry.org/api/uaa/version/4.14.0/index.html#delete-5.
+func (gm GroupManager) Delete(groupID string) (Group, error) {
 	url := "/Groups/" + groupID
-	bytes, err := AuthenticatedRequester{}.Delete(gm.HttpClient, gm.Config, url, "")
+	bytes, err := AuthenticatedRequestor{}.Delete(gm.HTTPClient, gm.Config, url, "")
 	if err != nil {
-		return ScimGroup{}, err
+		return Group{}, err
 	}
 
-	deleted := ScimGroup{}
+	deleted := Group{}
 	err = json.Unmarshal(bytes, &deleted)
 	if err != nil {
-		return ScimGroup{}, parseError(url, bytes)
+		return Group{}, parseError(url, bytes)
 	}
 
 	return deleted, err

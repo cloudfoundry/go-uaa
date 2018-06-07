@@ -2,26 +2,30 @@ package uaa
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 	"strings"
 
-	"github.com/cloudfoundry-community/uaa/utils"
+	"github.com/cloudfoundry-community/uaa/internal/utils"
 )
 
+const clientsResource string = "/oauth/clients"
+
+// ClientManager allows you to interact with the Clients resource.
 type ClientManager struct {
-	HttpClient *http.Client
+	HTTPClient *http.Client
 	Config     Config
 }
 
-type UaaClient struct {
-	ClientId             string   `json:"client_id,omitempty"`
+// Client is a UAA client
+// http://docs.cloudfoundry.org/api/uaa/version/4.14.0/index.html#clients.
+type Client struct {
+	ClientID             string   `json:"client_id,omitempty"`
 	ClientSecret         string   `json:"client_secret,omitempty"`
 	Scope                []string `json:"scope,omitempty"`
-	ResourceIds          []string `json:"resource_ids,omitempty"`
+	ResourceIDs          []string `json:"resource_ids,omitempty"`
 	AuthorizedGrantTypes []string `json:"authorized_grant_types,omitempty"`
-	RedirectUri          []string `json:"redirect_uri,omitempty"`
+	RedirectURI          []string `json:"redirect_uri,omitempty"`
 	Authorities          []string `json:"authorities,omitempty"`
 	TokenSalt            string   `json:"token_salt,omitempty"`
 	AllowedProviders     []string `json:"allowedproviders,omitempty"`
@@ -33,23 +37,23 @@ type UaaClient struct {
 }
 
 func errorMissingValueForGrantType(value string, grantType GrantType) error {
-	return errors.New(fmt.Sprintf("%v must be specified for %v grant type.", value, grantType))
+	return fmt.Errorf("%v must be specified for %v grant type", value, grantType)
 }
 
 func errorMissingValue(value string) error {
-	return errors.New(fmt.Sprintf("%v must be specified in the client definition.", value))
+	return fmt.Errorf("%v must be specified in the client definition", value)
 }
 
-func requireRedirectUriForGrantType(c *UaaClient, grantType GrantType) error {
+func requireRedirectURIForGrantType(c *Client, grantType GrantType) error {
 	if utils.Contains(c.AuthorizedGrantTypes, string(grantType)) {
-		if len(c.RedirectUri) == 0 {
+		if len(c.RedirectURI) == 0 {
 			return errorMissingValueForGrantType("redirect_uri", grantType)
 		}
 	}
 	return nil
 }
 
-func requireClientSecretForGrantType(c *UaaClient, grantType GrantType) error {
+func requireClientSecretForGrantType(c *Client, grantType GrantType) error {
 	if utils.Contains(c.AuthorizedGrantTypes, string(grantType)) {
 		if c.ClientSecret == "" {
 			return errorMissingValueForGrantType("client_secret", grantType)
@@ -60,24 +64,25 @@ func requireClientSecretForGrantType(c *UaaClient, grantType GrantType) error {
 
 func knownGrantTypesStr() string {
 	grantTypeStrings := []string{}
-	KNOWN_GRANT_TYPES := []GrantType{AUTHCODE, IMPLICIT, PASSWORD, CLIENT_CREDENTIALS}
-	for _, grant := range KNOWN_GRANT_TYPES {
+	knownGrantTypes := []GrantType{AUTHCODE, IMPLICIT, PASSWORD, CLIENTCREDENTIALS}
+	for _, grant := range knownGrantTypes {
 		grantTypeStrings = append(grantTypeStrings, string(grant))
 	}
 
 	return "[" + strings.Join(grantTypeStrings, ", ") + "]"
 }
 
-func (c *UaaClient) PreCreateValidation() error {
+// Validate returns nil if the client is valid, or an error if it is invalid.
+func (c *Client) Validate() error {
 	if len(c.AuthorizedGrantTypes) == 0 {
-		return errors.New(fmt.Sprintf("Grant type must be one of %v", knownGrantTypesStr()))
+		return fmt.Errorf("grant type must be one of %v", knownGrantTypesStr())
 	}
 
-	if c.ClientId == "" {
+	if c.ClientID == "" {
 		return errorMissingValue("client_id")
 	}
 
-	if err := requireRedirectUriForGrantType(c, AUTHCODE); err != nil {
+	if err := requireRedirectURIForGrantType(c, AUTHCODE); err != nil {
 		return err
 	}
 	if err := requireClientSecretForGrantType(c, AUTHCODE); err != nil {
@@ -88,11 +93,11 @@ func (c *UaaClient) PreCreateValidation() error {
 		return err
 	}
 
-	if err := requireClientSecretForGrantType(c, CLIENT_CREDENTIALS); err != nil {
+	if err := requireClientSecretForGrantType(c, CLIENTCREDENTIALS); err != nil {
 		return err
 	}
 
-	if err := requireRedirectUriForGrantType(c, IMPLICIT); err != nil {
+	if err := requireRedirectURIForGrantType(c, IMPLICIT); err != nil {
 		return err
 	}
 
@@ -100,96 +105,107 @@ func (c *UaaClient) PreCreateValidation() error {
 }
 
 type changeSecretBody struct {
-	ClientId     string `json:"clientId,omitempty"`
+	ClientID     string `json:"clientID,omitempty"`
 	ClientSecret string `json:"secret,omitempty"`
 }
 
+// PaginatedClientList is the response from the API for a single page of clients.
 type PaginatedClientList struct {
-	Resources    []UaaClient `json:"resources"`
-	StartIndex   int         `json:"startIndex"`
-	ItemsPerPage int         `json:"itemsPerPage"`
-	TotalResults int         `json:"totalResults"`
-	Schemas      []string    `json:"schemas"`
+	Resources    []Client `json:"resources"`
+	StartIndex   int      `json:"startIndex"`
+	ItemsPerPage int      `json:"itemsPerPage"`
+	TotalResults int      `json:"totalResults"`
+	Schemas      []string `json:"schemas"`
 }
 
-func (cm *ClientManager) Get(clientId string) (UaaClient, error) {
-	url := "/oauth/clients/" + clientId
-	bytes, err := AuthenticatedRequester{}.Get(cm.HttpClient, cm.Config, url, "")
+// Get the client with the given ID
+// http://docs.cloudfoundry.org/api/uaa/version/4.14.0/index.html#retrieve-3.
+func (cm *ClientManager) Get(id string) (Client, error) {
+	url := fmt.Sprintf("%s/%s", clientsResource, id)
+	bytes, err := AuthenticatedRequestor{}.Get(cm.HTTPClient, cm.Config, url, "")
 	if err != nil {
-		return UaaClient{}, err
+		return Client{}, err
 	}
 
-	uaaClient := UaaClient{}
-	err = json.Unmarshal(bytes, &uaaClient)
+	c := Client{}
+	err = json.Unmarshal(bytes, &c)
 	if err != nil {
-		return UaaClient{}, parseError(url, bytes)
+		return Client{}, parseError(url, bytes)
 	}
 
-	return uaaClient, err
+	return c, err
 }
 
-func (cm *ClientManager) Delete(clientId string) (UaaClient, error) {
-	url := "/oauth/clients/" + clientId
-	bytes, err := AuthenticatedRequester{}.Delete(cm.HttpClient, cm.Config, url, "")
+// Delete the client with the given ID
+// http://docs.cloudfoundry.org/api/uaa/version/4.14.0/index.html#delete-6.
+func (cm *ClientManager) Delete(id string) (Client, error) {
+	url := fmt.Sprintf("%s/%s", clientsResource, id)
+	bytes, err := AuthenticatedRequestor{}.Delete(cm.HTTPClient, cm.Config, url, "")
 	if err != nil {
-		return UaaClient{}, err
+		return Client{}, err
 	}
 
-	uaaClient := UaaClient{}
-	err = json.Unmarshal(bytes, &uaaClient)
+	c := Client{}
+	err = json.Unmarshal(bytes, &c)
 	if err != nil {
-		return UaaClient{}, parseError(url, bytes)
+		return Client{}, parseError(url, bytes)
 	}
 
-	return uaaClient, err
+	return c, err
 }
 
-func (cm *ClientManager) Create(toCreate UaaClient) (UaaClient, error) {
-	url := "/oauth/clients"
-	bytes, err := AuthenticatedRequester{}.PostJson(cm.HttpClient, cm.Config, url, "", toCreate)
+// Create the given client
+// http://docs.cloudfoundry.org/api/uaa/version/4.14.0/index.html#create-6.
+func (cm *ClientManager) Create(client Client) (Client, error) {
+	bytes, err := AuthenticatedRequestor{}.PostJSON(cm.HTTPClient, cm.Config, clientsResource, "", client)
 	if err != nil {
-		return UaaClient{}, err
+		return Client{}, err
 	}
 
-	uaaClient := UaaClient{}
-	err = json.Unmarshal(bytes, &uaaClient)
+	c := Client{}
+	err = json.Unmarshal(bytes, &c)
 	if err != nil {
-		return UaaClient{}, parseError(url, bytes)
+		return Client{}, parseError(clientsResource, bytes)
 	}
 
-	return uaaClient, err
+	return c, err
 }
 
-func (cm *ClientManager) Update(toUpdate UaaClient) (UaaClient, error) {
-	url := "/oauth/clients/" + toUpdate.ClientId
-	bytes, err := AuthenticatedRequester{}.PutJson(cm.HttpClient, cm.Config, url, "", toUpdate)
+// Update the given client
+// http://docs.cloudfoundry.org/api/uaa/version/4.14.0/index.html#update-6.
+func (cm *ClientManager) Update(client Client) (Client, error) {
+	url := "/oauth/clients/" + client.ClientID
+	bytes, err := AuthenticatedRequestor{}.PutJSON(cm.HTTPClient, cm.Config, url, "", client)
 	if err != nil {
-		return UaaClient{}, err
+		return Client{}, err
 	}
 
-	uaaClient := UaaClient{}
-	err = json.Unmarshal(bytes, &uaaClient)
+	c := Client{}
+	err = json.Unmarshal(bytes, &c)
 	if err != nil {
-		return UaaClient{}, parseError(url, bytes)
+		return Client{}, parseError(url, bytes)
 	}
 
-	return uaaClient, err
+	return c, err
 }
 
-func (cm *ClientManager) ChangeSecret(clientId string, newSecret string) error {
-	url := "/oauth/clients/" + clientId + "/secret"
-	body := changeSecretBody{ClientId: clientId, ClientSecret: newSecret}
-	_, err := AuthenticatedRequester{}.PutJson(cm.HttpClient, cm.Config, url, "", body)
+// ChangeSecret updates the secret with the given value for the client
+// with the given id
+// http://docs.cloudfoundry.org/api/uaa/version/4.14.0/index.html#change-secret.
+func (cm *ClientManager) ChangeSecret(id string, newSecret string) error {
+	url := "/oauth/clients/" + id + "/secret"
+	body := changeSecretBody{ClientID: id, ClientSecret: newSecret}
+	_, err := AuthenticatedRequestor{}.PutJSON(cm.HTTPClient, cm.Config, url, "", body)
 	return err
 }
 
-func getResultPage(cm *ClientManager, startIndex, count int) (PaginatedClientList, error) {
+func getClientPage(cm *ClientManager, startIndex, count int) (PaginatedClientList, error) {
 	query := fmt.Sprintf("startIndex=%v&count=%v", startIndex, count)
 	if startIndex == 0 {
 		query = ""
 	}
 
-	bytes, err := AuthenticatedRequester{}.Get(cm.HttpClient, cm.Config, "/oauth/clients", query)
+	bytes, err := AuthenticatedRequestor{}.Get(cm.HTTPClient, cm.Config, "/oauth/clients", query)
 	if err != nil {
 		return PaginatedClientList{}, err
 	}
@@ -202,19 +218,20 @@ func getResultPage(cm *ClientManager, startIndex, count int) (PaginatedClientLis
 	return clientList, nil
 }
 
-func (cm *ClientManager) List() ([]UaaClient, error) {
-	results, err := getResultPage(cm, 0, 0)
+// List all clients.
+func (cm *ClientManager) List() ([]Client, error) {
+	results, err := getClientPage(cm, 0, 0)
 	if err != nil {
-		return []UaaClient{}, err
+		return []Client{}, err
 	}
 
 	clientList := results.Resources
 	startIndex, count := results.StartIndex, results.ItemsPerPage
 	for results.TotalResults > len(clientList) {
 		startIndex += count
-		newResults, err := getResultPage(cm, startIndex, count)
+		newResults, err := getClientPage(cm, startIndex, count)
 		if err != nil {
-			return []UaaClient{}, err
+			return []Client{}, err
 		}
 		clientList = append(clientList, newResults.Resources...)
 	}

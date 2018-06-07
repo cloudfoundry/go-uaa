@@ -54,7 +54,7 @@ var _ = Describe("OauthTokenRequest", func() {
 				ghttp.VerifyFormKV("response_type", "token"),
 			))
 
-			ccClient := ClientCredentialsClient{ClientId: "identity", ClientSecret: "identitysecret"}
+			ccClient := ClientCredentialsClient{ClientID: "identity", ClientSecret: "identitysecret"}
 			tokenResponse, _ := ccClient.RequestToken(client, config, OPAQUE)
 
 			Expect(server.ReceivedRequests()).To(HaveLen(1))
@@ -71,7 +71,7 @@ var _ = Describe("OauthTokenRequest", func() {
 				ghttp.VerifyRequest("POST", "/oauth/token"),
 			))
 
-			ccClient := ClientCredentialsClient{ClientId: "identity", ClientSecret: "identitysecret"}
+			ccClient := ClientCredentialsClient{ClientID: "identity", ClientSecret: "identitysecret"}
 			_, err := ccClient.RequestToken(client, config, OPAQUE)
 
 			Expect(server.ReceivedRequests()).To(HaveLen(1))
@@ -96,7 +96,7 @@ var _ = Describe("OauthTokenRequest", func() {
 			))
 
 			ropClient := ResourceOwnerPasswordClient{
-				ClientId:     "identity",
+				ClientID:     "identity",
 				ClientSecret: "identitysecret",
 				Username:     "woodstock",
 				Password:     "birdsrule",
@@ -118,7 +118,7 @@ var _ = Describe("OauthTokenRequest", func() {
 			))
 
 			ropClient := ResourceOwnerPasswordClient{
-				ClientId:     "identity",
+				ClientID:     "identity",
 				ClientSecret: "identitysecret",
 				Username:     "woodstock",
 				Password:     "birdsrule",
@@ -147,7 +147,7 @@ var _ = Describe("OauthTokenRequest", func() {
 			))
 
 			authcodeClient := AuthorizationCodeClient{
-				ClientId:     "my_authcode_client",
+				ClientID:     "my_authcode_client",
 				ClientSecret: "clientsecret",
 			}
 			tokenResponse, _ := authcodeClient.RequestToken(client, config, OPAQUE, "abcde", "http://localhost:8080")
@@ -176,7 +176,7 @@ var _ = Describe("OauthTokenRequest", func() {
 			))
 
 			authcodeClient := AuthorizationCodeClient{
-				ClientId:     "my_authcode_client",
+				ClientID:     "my_authcode_client",
 				ClientSecret: "clientsecret",
 			}
 			tokenResponse, _ := authcodeClient.RequestToken(client, config, JWT, "abcde", "http://localhost:8080")
@@ -197,7 +197,7 @@ var _ = Describe("OauthTokenRequest", func() {
 			))
 
 			authcodeClient := AuthorizationCodeClient{
-				ClientId:     "my_authcode_client",
+				ClientID:     "my_authcode_client",
 				ClientSecret: "clientsecret",
 			}
 
@@ -224,7 +224,7 @@ var _ = Describe("OauthTokenRequest", func() {
 			))
 
 			refreshClient := RefreshTokenClient{
-				ClientId:     "someclient",
+				ClientID:     "someclient",
 				ClientSecret: "somesecret",
 			}
 			tokenResponse, _ := refreshClient.RequestToken(client, config, OPAQUE, "the_refresh_token")

@@ -5,8 +5,10 @@ import (
 	"net/http"
 )
 
-type Userinfo struct {
-	UserId            string   `json:"user_id"`
+// UserInfo is a protected resource required for OpenID Connect compatibility.
+// The response format is defined here: https://openid.net/specs/openid-connect-core-1_0.html#UserInfoResponse.
+type UserInfo struct {
+	UserID            string   `json:"user_id"`
 	Sub               string   `json:"sub"`
 	Username          string   `json:"user_name"`
 	GivenName         string   `json:"given_name"`
@@ -17,16 +19,17 @@ type Userinfo struct {
 	Name              string   `json:"name"`
 }
 
-func Me(client *http.Client, config Config) (Userinfo, error) {
-	body, err := AuthenticatedRequester{}.Get(client, config, "/userinfo", "scheme=openid")
+// Me retrieves the UserInfo for the current user.
+func Me(client *http.Client, config Config) (UserInfo, error) {
+	body, err := AuthenticatedRequestor{}.Get(client, config, "/userinfo", "scheme=openid")
 	if err != nil {
-		return Userinfo{}, err
+		return UserInfo{}, err
 	}
 
-	info := Userinfo{}
+	info := UserInfo{}
 	err = json.Unmarshal(body, &info)
 	if err != nil {
-		return Userinfo{}, parseError("/userinfo", body)
+		return UserInfo{}, parseError("/userinfo", body)
 	}
 
 	return info, nil

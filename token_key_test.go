@@ -15,7 +15,7 @@ var _ = Describe("TokenKey", func() {
 		server            *ghttp.Server
 		client            *http.Client
 		config            Config
-		asymmetricKeyJson string
+		asymmetricKeyJSON string
 	)
 
 	BeforeEach(func() {
@@ -23,7 +23,7 @@ var _ = Describe("TokenKey", func() {
 		client = &http.Client{}
 		config = NewConfigWithServerURL(server.URL())
 
-		asymmetricKeyJson = `{
+		asymmetricKeyJSON = `{
 		  "kty": "RSA",
 		  "e": "AQAB",
 		  "use": "sig",
@@ -40,7 +40,7 @@ var _ = Describe("TokenKey", func() {
 
 	It("calls the /token_key endpoint", func() {
 		server.RouteToHandler("GET", "/token_key", ghttp.CombineHandlers(
-			ghttp.RespondWith(200, asymmetricKeyJson),
+			ghttp.RespondWith(200, asymmetricKeyJSON),
 			ghttp.VerifyRequest("GET", "/token_key"),
 			ghttp.VerifyHeaderKV("Accept", "application/json"),
 		))
@@ -85,7 +85,7 @@ var _ = Describe("TokenKey", func() {
 	})
 
 	It("can handle symmetric keys", func() {
-		symmetricKeyJson := `{
+		symmetricKeyJSON := `{
 		  "kty" : "MAC",
 		  "alg" : "HS256",
 		  "value" : "key",
@@ -94,7 +94,7 @@ var _ = Describe("TokenKey", func() {
 		}`
 
 		server.RouteToHandler("GET", "/token_key", ghttp.CombineHandlers(
-			ghttp.RespondWith(200, symmetricKeyJson),
+			ghttp.RespondWith(200, symmetricKeyJSON),
 			ghttp.VerifyRequest("GET", "/token_key"),
 			ghttp.VerifyHeaderKV("Accept", "application/json"),
 		))

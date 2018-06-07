@@ -1,7 +1,7 @@
 package utils_test
 
 import (
-	. "code.cloudfoundry.org/uaa-cli/utils"
+	. "github.com/cloudfoundry-community/uaa/internal/utils"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

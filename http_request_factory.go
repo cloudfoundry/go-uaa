@@ -8,28 +8,34 @@ import (
 	"net/url"
 	"strconv"
 
-	"github.com/cloudfoundry-community/uaa/utils"
+	"github.com/cloudfoundry-community/uaa/internal/utils"
 )
 
-type HttpRequestFactory interface {
+// httpRequestFactory is a request builder.
+type httpRequestFactory interface {
 	Get(Target, string, string) (*http.Request, error)
 	Delete(Target, string, string) (*http.Request, error)
 	PostForm(Target, string, string, *url.Values) (*http.Request, error)
-	PostJson(Target, string, string, interface{}) (*http.Request, error)
-	PutJson(Target, string, string, interface{}) (*http.Request, error)
+	PostJSON(Target, string, string, interface{}) (*http.Request, error)
+	PutJSON(Target, string, string, interface{}) (*http.Request, error)
+	PatchJSON(Target, string, string, interface{}) (*http.Request, error)
 }
 
-type UnauthenticatedRequestFactory struct{}
-type AuthenticatedRequestFactory struct{}
+// unauthenticatedRequestFactory builds requests that are unauthenticated.
+type unauthenticatedRequestFactory struct{}
 
-func (urf UnauthenticatedRequestFactory) Get(target Target, path string, query string) (*http.Request, error) {
-	targetUrl, err := utils.BuildUrl(target.BaseUrl, path)
+// authenticatedRequestFactory builds requests that are authenticated.
+type authenticatedRequestFactory struct{}
+
+// Get creates a get request with the given target, path and query.
+func (urf unauthenticatedRequestFactory) Get(target Target, path string, query string) (*http.Request, error) {
+	targetURL, err := utils.BuildURL(target.BaseURL, path)
 	if err != nil {
 		return nil, err
 	}
-	targetUrl.RawQuery = query
+	targetURL.RawQuery = query
 
-	req, err := http.NewRequest("GET", targetUrl.String(), nil)
+	req, err := http.NewRequest("GET", targetURL.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -38,14 +44,15 @@ func (urf UnauthenticatedRequestFactory) Get(target Target, path string, query s
 	return req, nil
 }
 
-func (urf UnauthenticatedRequestFactory) Delete(target Target, path string, query string) (*http.Request, error) {
-	targetUrl, err := utils.BuildUrl(target.BaseUrl, path)
+// Delete creates a delete request with the given target, path, and query.
+func (urf unauthenticatedRequestFactory) Delete(target Target, path string, query string) (*http.Request, error) {
+	targetURL, err := utils.BuildURL(target.BaseURL, path)
 	if err != nil {
 		return nil, err
 	}
-	targetUrl.RawQuery = query
+	targetURL.RawQuery = query
 
-	req, err := http.NewRequest("DELETE", targetUrl.String(), nil)
+	req, err := http.NewRequest("DELETE", targetURL.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -54,15 +61,16 @@ func (urf UnauthenticatedRequestFactory) Delete(target Target, path string, quer
 	return req, nil
 }
 
-func (urf UnauthenticatedRequestFactory) PostForm(target Target, path string, query string, data *url.Values) (*http.Request, error) {
-	targetUrl, err := utils.BuildUrl(target.BaseUrl, path)
+// PostForm creates a post request with the given target, path, query, and data.
+func (urf unauthenticatedRequestFactory) PostForm(target Target, path string, query string, data *url.Values) (*http.Request, error) {
+	targetURL, err := utils.BuildURL(target.BaseURL, path)
 	if err != nil {
 		return nil, err
 	}
-	targetUrl.RawQuery = query
+	targetURL.RawQuery = query
 
 	bodyBytes := []byte(data.Encode())
-	req, err := http.NewRequest("POST", targetUrl.String(), bytes.NewBuffer(bodyBytes))
+	req, err := http.NewRequest("POST", targetURL.String(), bytes.NewBuffer(bodyBytes))
 	if err != nil {
 		return nil, err
 	}
@@ -73,44 +81,21 @@ func (urf UnauthenticatedRequestFactory) PostForm(target Target, path string, qu
 	return req, nil
 }
 
-func (urf UnauthenticatedRequestFactory) PostJson(target Target, path string, query string, objToJsonify interface{}) (*http.Request, error) {
-	targetUrl, err := utils.BuildUrl(target.BaseUrl, path)
+// PostJSON creates a post request with the given target, path, query, and body.
+func (urf unauthenticatedRequestFactory) PostJSON(target Target, path string, query string, body interface{}) (*http.Request, error) {
+	targetURL, err := utils.BuildURL(target.BaseURL, path)
 	if err != nil {
 		return nil, err
 	}
-	targetUrl.RawQuery = query
+	targetURL.RawQuery = query
 
-	objectJson, err := json.Marshal(objToJsonify)
-	if err != nil {
-		return nil, err
-	}
-
-	bodyBytes := []byte(objectJson)
-	req, err := http.NewRequest("POST", targetUrl.String(), bytes.NewBuffer(bodyBytes))
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Add("Accept", "application/json")
-	req.Header.Add("Content-Type", "application/json")
-	req.Header.Add("Content-Length", strconv.Itoa(len(bodyBytes)))
-
-	return req, nil
-}
-
-func (urf UnauthenticatedRequestFactory) PutJson(target Target, path string, query string, objToJsonify interface{}) (*http.Request, error) {
-	targetUrl, err := utils.BuildUrl(target.BaseUrl, path)
-	if err != nil {
-		return nil, err
-	}
-	targetUrl.RawQuery = query
-
-	objectJson, err := json.Marshal(objToJsonify)
+	j, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 
-	bodyBytes := []byte(objectJson)
-	req, err := http.NewRequest("PUT", targetUrl.String(), bytes.NewBuffer(bodyBytes))
+	bodyBytes := []byte(j)
+	req, err := http.NewRequest("POST", targetURL.String(), bytes.NewBuffer(bodyBytes))
 	if err != nil {
 		return nil, err
 	}
@@ -121,20 +106,21 @@ func (urf UnauthenticatedRequestFactory) PutJson(target Target, path string, que
 	return req, nil
 }
 
-func (urf UnauthenticatedRequestFactory) PatchJson(target Target, path string, query string, objToJsonify interface{}) (*http.Request, error) {
-	targetUrl, err := utils.BuildUrl(target.BaseUrl, path)
+// PutJSON creates a put request with the given target, path, query, and body.
+func (urf unauthenticatedRequestFactory) PutJSON(target Target, path string, query string, body interface{}) (*http.Request, error) {
+	targetURL, err := utils.BuildURL(target.BaseURL, path)
 	if err != nil {
 		return nil, err
 	}
-	targetUrl.RawQuery = query
+	targetURL.RawQuery = query
 
-	objectJson, err := json.Marshal(objToJsonify)
+	j, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 
-	bodyBytes := []byte(objectJson)
-	req, err := http.NewRequest("PATCH", targetUrl.String(), bytes.NewBuffer(bodyBytes))
+	bodyBytes := []byte(j)
+	req, err := http.NewRequest("PUT", targetURL.String(), bytes.NewBuffer(bodyBytes))
 	if err != nil {
 		return nil, err
 	}
@@ -145,7 +131,32 @@ func (urf UnauthenticatedRequestFactory) PatchJson(target Target, path string, q
 	return req, nil
 }
 
-func addAuthorization(req *http.Request, ctx UaaContext) (*http.Request, error) {
+// PatchJSON creates a patch request with the given body
+func (urf unauthenticatedRequestFactory) PatchJSON(target Target, path string, query string, body interface{}) (*http.Request, error) {
+	targetURL, err := utils.BuildURL(target.BaseURL, path)
+	if err != nil {
+		return nil, err
+	}
+	targetURL.RawQuery = query
+
+	j, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+
+	bodyBytes := []byte(j)
+	req, err := http.NewRequest("PATCH", targetURL.String(), bytes.NewBuffer(bodyBytes))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Add("Accept", "application/json")
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("Content-Length", strconv.Itoa(len(bodyBytes)))
+
+	return req, nil
+}
+
+func addAuthorization(req *http.Request, ctx AuthContext) (*http.Request, error) {
 	accessToken := ctx.AccessToken
 	req.Header.Add("Authorization", "bearer "+accessToken)
 	if accessToken == "" {
@@ -155,8 +166,9 @@ func addAuthorization(req *http.Request, ctx UaaContext) (*http.Request, error) 
 	return req, nil
 }
 
-func (arf AuthenticatedRequestFactory) Get(target Target, path string, query string) (*http.Request, error) {
-	req, err := UnauthenticatedRequestFactory{}.Get(target, path, query)
+// Get creates a get request with the given target, path and query.
+func (arf authenticatedRequestFactory) Get(target Target, path string, query string) (*http.Request, error) {
+	req, err := unauthenticatedRequestFactory{}.Get(target, path, query)
 
 	if err != nil {
 		return nil, err
@@ -165,8 +177,9 @@ func (arf AuthenticatedRequestFactory) Get(target Target, path string, query str
 	return addAuthorization(req, target.GetActiveContext())
 }
 
-func (arf AuthenticatedRequestFactory) Delete(target Target, path string, query string) (*http.Request, error) {
-	req, err := UnauthenticatedRequestFactory{}.Delete(target, path, query)
+// Delete creates a delete request with the given target, path, and query.
+func (arf authenticatedRequestFactory) Delete(target Target, path string, query string) (*http.Request, error) {
+	req, err := unauthenticatedRequestFactory{}.Delete(target, path, query)
 
 	if err != nil {
 		return nil, err
@@ -175,8 +188,9 @@ func (arf AuthenticatedRequestFactory) Delete(target Target, path string, query 
 	return addAuthorization(req, target.GetActiveContext())
 }
 
-func (arf AuthenticatedRequestFactory) PostForm(target Target, path string, query string, data *url.Values) (*http.Request, error) {
-	req, err := UnauthenticatedRequestFactory{}.PostForm(target, path, query, data)
+// PostForm creates a post request with the given target, path, query, and data.
+func (arf authenticatedRequestFactory) PostForm(target Target, path string, query string, data *url.Values) (*http.Request, error) {
+	req, err := unauthenticatedRequestFactory{}.PostForm(target, path, query, data)
 	if err != nil {
 		return nil, err
 	}
@@ -184,8 +198,9 @@ func (arf AuthenticatedRequestFactory) PostForm(target Target, path string, quer
 	return addAuthorization(req, target.GetActiveContext())
 }
 
-func (arf AuthenticatedRequestFactory) PostJson(target Target, path string, query string, objToJsonify interface{}) (*http.Request, error) {
-	req, err := UnauthenticatedRequestFactory{}.PostJson(target, path, query, objToJsonify)
+// PostJSON creates a post request with the given target, path, query, and body.
+func (arf authenticatedRequestFactory) PostJSON(target Target, path string, query string, body interface{}) (*http.Request, error) {
+	req, err := unauthenticatedRequestFactory{}.PostJSON(target, path, query, body)
 	if err != nil {
 		return nil, err
 	}
@@ -193,8 +208,9 @@ func (arf AuthenticatedRequestFactory) PostJson(target Target, path string, quer
 	return addAuthorization(req, target.GetActiveContext())
 }
 
-func (arf AuthenticatedRequestFactory) PutJson(target Target, path string, query string, objToJsonify interface{}) (*http.Request, error) {
-	req, err := UnauthenticatedRequestFactory{}.PutJson(target, path, query, objToJsonify)
+// PutJSON creates a put request with the given target, path, query, and body.
+func (arf authenticatedRequestFactory) PutJSON(target Target, path string, query string, body interface{}) (*http.Request, error) {
+	req, err := unauthenticatedRequestFactory{}.PutJSON(target, path, query, body)
 	if err != nil {
 		return nil, err
 	}
@@ -202,8 +218,9 @@ func (arf AuthenticatedRequestFactory) PutJson(target Target, path string, query
 	return addAuthorization(req, target.GetActiveContext())
 }
 
-func (arf AuthenticatedRequestFactory) PatchJson(target Target, path string, query string, objToJsonify interface{}) (*http.Request, error) {
-	req, err := UnauthenticatedRequestFactory{}.PatchJson(target, path, query, objToJsonify)
+// PatchJSON creates a patch request with the given body
+func (arf authenticatedRequestFactory) PatchJSON(target Target, path string, query string, body interface{}) (*http.Request, error) {
+	req, err := unauthenticatedRequestFactory{}.PatchJSON(target, path, query, body)
 	if err != nil {
 		return nil, err
 	}

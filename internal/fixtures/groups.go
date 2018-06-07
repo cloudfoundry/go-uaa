@@ -14,7 +14,7 @@ const UaaAdminGroupResponse = `{
 		"type" : "USER",
 		"value" : "fb5f32e1-5cb3-49e6-93df-6df9c8c8bd70"
 	} ],
-	"zoneId" : "uaa",
+	"zoneID" : "uaa",
 	"schemas" : [ "urn:scim:schemas:core:1.0" ]
 }`
 
@@ -32,6 +32,6 @@ const CloudControllerReadGroupResponse = `{
 		"type" : "USER",
 		"value" : "fb5f32e1-5cb3-49e6-93df-6df9c8c8bd70"
 	} ],
-	"zoneId" : "uaa",
+	"zoneID" : "uaa",
 	"schemas" : [ "urn:scim:schemas:core:1.0" ]
 }`

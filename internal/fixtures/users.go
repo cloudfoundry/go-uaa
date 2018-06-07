@@ -7,7 +7,7 @@ import (
 
 const MarcusUserResponse = `{
 	  "id" : "fb5f32e1-5cb3-49e6-93df-6df9c8c8bd70",
-	  "externalId" : "marcus-user",
+	  "externalID" : "marcus-user",
 	  "meta" : {
 		"version" : 1,
 		"created" : "2017-01-15T16:54:15.677Z",
@@ -32,15 +32,15 @@ const MarcusUserResponse = `{
 		"type" : "DIRECT"
 	  }],
 	  "approvals" : [ {
-		"userId" : "fb5f32e1-5cb3-49e6-93df-6df9c8c8bd70",
-		"clientId" : "shinyclient",
+		"userID" : "fb5f32e1-5cb3-49e6-93df-6df9c8c8bd70",
+		"clientID" : "shinyclient",
 		"scope" : "philosophy.read",
 		"status" : "APPROVED",
 		"lastUpdatedAt" : "2017-08-15T16:54:15.765Z",
 		"expiresAt" : "2017-08-15T16:54:25.765Z"
 	  }, {
-		"userId" : "fb5f32e1-5cb3-49e6-93df-6df9c8c8bd70",
-		"clientId" : "identity",
+		"userID" : "fb5f32e1-5cb3-49e6-93df-6df9c8c8bd70",
+		"clientID" : "identity",
 		"scope" : "uaa.user",
 		"status" : "APPROVED",
 		"lastUpdatedAt" : "2017-08-15T16:54:45.767Z",
@@ -52,7 +52,7 @@ const MarcusUserResponse = `{
 	  "active" : true,
 	  "verified" : true,
 	  "origin" : "uaa",
-	  "zoneId" : "uaa",
+	  "zoneID" : "uaa",
 	  "passwordLastModified" : "2017-08-15T16:54:15.000Z",
 	  "previousLogonTime" : 1502816055768,
 	  "lastLogonTime" : 1502816055768,
@@ -61,7 +61,7 @@ const MarcusUserResponse = `{
 
 const DrSeussUserResponse = `{
 	  "id" : "fb5f32e1-5cb3-49e6-93df-6df9c8c8bd70",
-	  "externalId" : "seuss-user",
+	  "externalID" : "seuss-user",
 	  "meta" : {
 		"version" : 1,
 		"created" : "2017-01-15T16:54:15.677Z",
@@ -86,15 +86,15 @@ const DrSeussUserResponse = `{
 		"type" : "DIRECT"
 	  }],
 	  "approvals" : [ {
-		"userId" : "fb5f32e1-5cb3-49e6-93df-6df9c8c8bd70",
-		"clientId" : "shinyclient",
+		"userID" : "fb5f32e1-5cb3-49e6-93df-6df9c8c8bd70",
+		"clientID" : "shinyclient",
 		"scope" : "cat_in_hat.read",
 		"status" : "APPROVED",
 		"lastUpdatedAt" : "2017-08-15T16:54:15.765Z",
 		"expiresAt" : "2017-08-15T16:54:25.765Z"
 	  }, {
-		"userId" : "fb5f32e1-5cb3-49e6-93df-6df9c8c8bd70",
-		"clientId" : "identity",
+		"userID" : "fb5f32e1-5cb3-49e6-93df-6df9c8c8bd70",
+		"clientID" : "identity",
 		"scope" : "cat_in_hat.write",
 		"status" : "APPROVED",
 		"lastUpdatedAt" : "2017-08-15T16:54:45.767Z",
@@ -106,7 +106,7 @@ const DrSeussUserResponse = `{
 	  "active" : true,
 	  "verified" : true,
 	  "origin" : "uaa",
-	  "zoneId" : "uaa",
+	  "zoneID" : "uaa",
 	  "passwordLastModified" : "2017-08-15T16:54:15.000Z",
 	  "previousLogonTime" : 1502816055768,
 	  "lastLogonTime" : 1502816055768,

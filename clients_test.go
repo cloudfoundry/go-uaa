@@ -27,84 +27,84 @@ var _ = Describe("Clients", func() {
 
 	Describe("UaaClient.PreCreateValidation()", func() {
 		It("rejects empty grant types", func() {
-			client := uaa.UaaClient{}
+			client := uaa.Client{}
 
-			err := client.PreCreateValidation()
+			err := client.Validate()
 
-			Expect(err.Error()).To(Equal(`Grant type must be one of [authorization_code, implicit, password, client_credentials]`))
+			Expect(err.Error()).To(Equal(`grant type must be one of [authorization_code, implicit, password, client_credentials]`))
 		})
 
 		Describe("when authorization_code", func() {
 			It("requires client_id", func() {
-				client := uaa.UaaClient{
+				client := uaa.Client{
 					AuthorizedGrantTypes: []string{"authorization_code"},
-					RedirectUri:          []string{"http://localhost:8080"},
+					RedirectURI:          []string{"http://localhost:8080"},
 					ClientSecret:         "secret",
 				}
 
-				err := client.PreCreateValidation()
+				err := client.Validate()
 
 				Expect(err).NotTo(BeNil())
-				Expect(err.Error()).To(Equal("client_id must be specified in the client definition."))
+				Expect(err.Error()).To(Equal("client_id must be specified in the client definition"))
 			})
 
 			It("requires redirect_uri", func() {
-				client := uaa.UaaClient{
-					ClientId:             "myclient",
+				client := uaa.Client{
+					ClientID:             "myclient",
 					AuthorizedGrantTypes: []string{"authorization_code"},
 					ClientSecret:         "secret",
 				}
 
-				err := client.PreCreateValidation()
+				err := client.Validate()
 
-				Expect(err.Error()).To(Equal("redirect_uri must be specified for authorization_code grant type."))
+				Expect(err.Error()).To(Equal("redirect_uri must be specified for authorization_code grant type"))
 			})
 
 			It("requires client_secret", func() {
-				client := uaa.UaaClient{
-					ClientId:             "myclient",
+				client := uaa.Client{
+					ClientID:             "myclient",
 					AuthorizedGrantTypes: []string{"authorization_code"},
-					RedirectUri:          []string{"http://localhost:8080"},
+					RedirectURI:          []string{"http://localhost:8080"},
 				}
 
-				err := client.PreCreateValidation()
+				err := client.Validate()
 
-				Expect(err.Error()).To(Equal("client_secret must be specified for authorization_code grant type."))
+				Expect(err.Error()).To(Equal("client_secret must be specified for authorization_code grant type"))
 			})
 		})
 
 		Describe("when implicit", func() {
 			It("requires client_id", func() {
-				client := uaa.UaaClient{
+				client := uaa.Client{
 					AuthorizedGrantTypes: []string{"implicit"},
-					RedirectUri:          []string{"http://localhost:8080"},
+					RedirectURI:          []string{"http://localhost:8080"},
 				}
 
-				err := client.PreCreateValidation()
+				err := client.Validate()
 
 				Expect(err).NotTo(BeNil())
-				Expect(err.Error()).To(Equal("client_id must be specified in the client definition."))
+				Expect(err.Error()).To(Equal("client_id must be specified in the client definition"))
 			})
 
 			It("requires redirect_uri", func() {
-				client := uaa.UaaClient{
-					ClientId:             "myclient",
+				client := uaa.Client{
+					ClientID:             "myclient",
 					AuthorizedGrantTypes: []string{"implicit"},
 				}
 
-				err := client.PreCreateValidation()
+				err := client.Validate()
 
-				Expect(err.Error()).To(Equal("redirect_uri must be specified for implicit grant type."))
+				Expect(err.Error()).To(Equal("redirect_uri must be specified for implicit grant type"))
 			})
 
 			It("does not require client_secret", func() {
-				client := uaa.UaaClient{
-					ClientId:             "someclient",
+				client := uaa.Client{
+					ClientID:             "someclient",
 					AuthorizedGrantTypes: []string{"implicit"},
-					RedirectUri:          []string{"http://localhost:8080"},
+					RedirectURI:          []string{"http://localhost:8080"},
 				}
 
-				err := client.PreCreateValidation()
+				err := client.Validate()
 
 				Expect(err).To(BeNil())
 			})
@@ -112,58 +112,58 @@ var _ = Describe("Clients", func() {
 
 		Describe("when client_credentials", func() {
 			It("requires client_id", func() {
-				client := uaa.UaaClient{
+				client := uaa.Client{
 					AuthorizedGrantTypes: []string{"client_credentials"},
 					ClientSecret:         "secret",
 				}
 
-				err := client.PreCreateValidation()
+				err := client.Validate()
 
 				Expect(err).NotTo(BeNil())
-				Expect(err.Error()).To(Equal("client_id must be specified in the client definition."))
+				Expect(err.Error()).To(Equal("client_id must be specified in the client definition"))
 			})
 
 			It("requires client_secret", func() {
-				client := uaa.UaaClient{
-					ClientId:             "myclient",
+				client := uaa.Client{
+					ClientID:             "myclient",
 					AuthorizedGrantTypes: []string{"client_credentials"},
 				}
 
-				err := client.PreCreateValidation()
+				err := client.Validate()
 
-				Expect(err.Error()).To(Equal("client_secret must be specified for client_credentials grant type."))
+				Expect(err.Error()).To(Equal("client_secret must be specified for client_credentials grant type"))
 			})
 		})
 
 		Describe("when password", func() {
 			It("requires client_id", func() {
-				client := uaa.UaaClient{
+				client := uaa.Client{
 					AuthorizedGrantTypes: []string{"password"},
-					RedirectUri:          []string{"http://localhost:8080"},
+					RedirectURI:          []string{"http://localhost:8080"},
 					ClientSecret:         "secret",
 				}
 
-				err := client.PreCreateValidation()
+				err := client.Validate()
 
 				Expect(err).NotTo(BeNil())
-				Expect(err.Error()).To(Equal("client_id must be specified in the client definition."))
+				Expect(err.Error()).To(Equal("client_id must be specified in the client definition"))
 			})
 
 			It("requires client_secret", func() {
-				client := uaa.UaaClient{
-					ClientId:             "myclient",
+				client := uaa.Client{
+					ClientID:             "myclient",
 					AuthorizedGrantTypes: []string{"password"},
 				}
 
-				err := client.PreCreateValidation()
+				err := client.Validate()
 
-				Expect(err.Error()).To(Equal("client_secret must be specified for password grant type."))
+				Expect(err.Error()).To(Equal("client_secret must be specified for password grant type"))
 			})
 		})
 	})
 
 	Describe("Get", func() {
-		const GetClientResponseJson string = `{
+		const GetClientResponseJSON string = `{
 		  "scope" : [ "clients.read", "clients.write" ],
 		  "client_id" : "clientid",
 		  "resource_ids" : [ "none" ],
@@ -184,23 +184,23 @@ var _ = Describe("Clients", func() {
 
 		It("calls the /oauth/clients endpoint", func() {
 			server.RouteToHandler("GET", "/oauth/clients/clientid", ghttp.CombineHandlers(
-				ghttp.RespondWith(200, GetClientResponseJson),
+				ghttp.RespondWith(200, GetClientResponseJSON),
 				ghttp.VerifyRequest("GET", "/oauth/clients/clientid"),
 				ghttp.VerifyHeaderKV("Accept", "application/json"),
 				ghttp.VerifyHeaderKV("Authorization", "bearer access_token"),
 			))
 
-			cm := &uaa.ClientManager{httpClient, config}
+			cm := &uaa.ClientManager{HTTPClient: httpClient, Config: config}
 			clientResponse, _ := cm.Get("clientid")
 
 			Expect(server.ReceivedRequests()).To(HaveLen(1))
 			Expect(clientResponse.Scope[0]).To(Equal("clients.read"))
 			Expect(clientResponse.Scope[1]).To(Equal("clients.write"))
-			Expect(clientResponse.ClientId).To(Equal("clientid"))
-			Expect(clientResponse.ResourceIds[0]).To(Equal("none"))
+			Expect(clientResponse.ClientID).To(Equal("clientid"))
+			Expect(clientResponse.ResourceIDs[0]).To(Equal("none"))
 			Expect(clientResponse.AuthorizedGrantTypes[0]).To(Equal("client_credentials"))
-			Expect(clientResponse.RedirectUri[0]).To(Equal("http://ant.path.wildcard/**/passback/*"))
-			Expect(clientResponse.RedirectUri[1]).To(Equal("http://test1.com"))
+			Expect(clientResponse.RedirectURI[0]).To(Equal("http://ant.path.wildcard/**/passback/*"))
+			Expect(clientResponse.RedirectURI[1]).To(Equal("http://test1.com"))
 			Expect(clientResponse.TokenSalt).To(Equal("1SztLL"))
 			Expect(clientResponse.AllowedProviders[0]).To(Equal("uaa"))
 			Expect(clientResponse.AllowedProviders[1]).To(Equal("ldap"))
@@ -217,7 +217,7 @@ var _ = Describe("Clients", func() {
 				ghttp.VerifyHeaderKV("Authorization", "bearer access_token"),
 			))
 
-			cm := &uaa.ClientManager{httpClient, config}
+			cm := &uaa.ClientManager{HTTPClient: httpClient, Config: config}
 			_, err := cm.Get("clientid")
 
 			Expect(err).NotTo(BeNil())
@@ -247,18 +247,18 @@ var _ = Describe("Clients", func() {
 				ghttp.VerifyHeaderKV("Authorization", "bearer access_token"),
 			))
 
-			cm := &uaa.ClientManager{httpClient, config}
+			cm := &uaa.ClientManager{HTTPClient: httpClient, Config: config}
 			clientResponse, err := cm.Get("clientid")
 
 			Expect(server.ReceivedRequests()).To(HaveLen(1))
 			Expect(err).To(BeNil())
 			Expect(clientResponse.Scope[0]).To(Equal("clients.read"))
 			Expect(clientResponse.Scope[1]).To(Equal("clients.write"))
-			Expect(clientResponse.ClientId).To(Equal("clientid"))
-			Expect(clientResponse.ResourceIds[0]).To(Equal("none"))
+			Expect(clientResponse.ClientID).To(Equal("clientid"))
+			Expect(clientResponse.ResourceIDs[0]).To(Equal("none"))
 			Expect(clientResponse.AuthorizedGrantTypes[0]).To(Equal("client_credentials"))
-			Expect(clientResponse.RedirectUri[0]).To(Equal("http://ant.path.wildcard/**/passback/*"))
-			Expect(clientResponse.RedirectUri[1]).To(Equal("http://test1.com"))
+			Expect(clientResponse.RedirectURI[0]).To(Equal("http://ant.path.wildcard/**/passback/*"))
+			Expect(clientResponse.RedirectURI[1]).To(Equal("http://test1.com"))
 			Expect(clientResponse.TokenSalt).To(Equal("1SztLL"))
 			Expect(clientResponse.AllowedProviders[0]).To(Equal("uaa"))
 			Expect(clientResponse.AllowedProviders[1]).To(Equal("ldap"))
@@ -275,7 +275,7 @@ var _ = Describe("Clients", func() {
 				ghttp.VerifyHeaderKV("Authorization", "bearer access_token"),
 			))
 
-			cm := &uaa.ClientManager{httpClient, config}
+			cm := &uaa.ClientManager{HTTPClient: httpClient, Config: config}
 			_, err := cm.Get("clientid")
 
 			Expect(err).NotTo(BeNil())
@@ -285,7 +285,7 @@ var _ = Describe("Clients", func() {
 	})
 
 	Describe("Delete", func() {
-		const DeleteClientResponseJson string = `{
+		const DeleteClientResponseJSON string = `{
 		  "scope" : [ "clients.read", "clients.write" ],
 		  "client_id" : "clientid",
 		  "resource_ids" : [ "none" ],
@@ -306,23 +306,23 @@ var _ = Describe("Clients", func() {
 
 		It("calls the /oauth/clients endpoint", func() {
 			server.RouteToHandler("DELETE", "/oauth/clients/clientid", ghttp.CombineHandlers(
-				ghttp.RespondWith(200, DeleteClientResponseJson),
+				ghttp.RespondWith(200, DeleteClientResponseJSON),
 				ghttp.VerifyRequest("DELETE", "/oauth/clients/clientid"),
 				ghttp.VerifyHeaderKV("Accept", "application/json"),
 				ghttp.VerifyHeaderKV("Authorization", "bearer access_token"),
 			))
 
-			cm := &uaa.ClientManager{httpClient, config}
+			cm := &uaa.ClientManager{HTTPClient: httpClient, Config: config}
 			clientResponse, _ := cm.Delete("clientid")
 
 			Expect(server.ReceivedRequests()).To(HaveLen(1))
 			Expect(clientResponse.Scope[0]).To(Equal("clients.read"))
 			Expect(clientResponse.Scope[1]).To(Equal("clients.write"))
-			Expect(clientResponse.ClientId).To(Equal("clientid"))
-			Expect(clientResponse.ResourceIds[0]).To(Equal("none"))
+			Expect(clientResponse.ClientID).To(Equal("clientid"))
+			Expect(clientResponse.ResourceIDs[0]).To(Equal("none"))
 			Expect(clientResponse.AuthorizedGrantTypes[0]).To(Equal("client_credentials"))
-			Expect(clientResponse.RedirectUri[0]).To(Equal("http://ant.path.wildcard/**/passback/*"))
-			Expect(clientResponse.RedirectUri[1]).To(Equal("http://test1.com"))
+			Expect(clientResponse.RedirectURI[0]).To(Equal("http://ant.path.wildcard/**/passback/*"))
+			Expect(clientResponse.RedirectURI[1]).To(Equal("http://test1.com"))
 			Expect(clientResponse.TokenSalt).To(Equal("1SztLL"))
 			Expect(clientResponse.AllowedProviders[0]).To(Equal("uaa"))
 			Expect(clientResponse.AllowedProviders[1]).To(Equal("ldap"))
@@ -339,7 +339,7 @@ var _ = Describe("Clients", func() {
 				ghttp.VerifyHeaderKV("Authorization", "bearer access_token"),
 			))
 
-			cm := &uaa.ClientManager{httpClient, config}
+			cm := &uaa.ClientManager{HTTPClient: httpClient, Config: config}
 			_, err := cm.Delete("clientid")
 
 			Expect(err).NotTo(BeNil())
@@ -354,7 +354,7 @@ var _ = Describe("Clients", func() {
 				ghttp.VerifyHeaderKV("Authorization", "bearer access_token"),
 			))
 
-			cm := &uaa.ClientManager{httpClient, config}
+			cm := &uaa.ClientManager{HTTPClient: httpClient, Config: config}
 			_, err := cm.Delete("clientid")
 
 			Expect(err).NotTo(BeNil())
@@ -388,28 +388,28 @@ var _ = Describe("Clients", func() {
 				ghttp.VerifyHeaderKV("Authorization", "bearer access_token"),
 			))
 
-			toCreate := uaa.UaaClient{
-				ClientId:             "peanuts_client",
+			toCreate := uaa.Client{
+				ClientID:             "peanuts_client",
 				AuthorizedGrantTypes: []string{"client_credentials"},
 				Scope:                []string{"clients.read", "clients.write"},
-				ResourceIds:          []string{"none"},
-				RedirectUri:          []string{"http://snoopy.com/**", "http://woodstock.com"},
+				ResourceIDs:          []string{"none"},
+				RedirectURI:          []string{"http://snoopy.com/**", "http://woodstock.com"},
 				Authorities:          []string{"comics.read", "comics.write"},
 				DisplayName:          "The Peanuts Client",
 			}
 
-			cm := &uaa.ClientManager{httpClient, config}
+			cm := &uaa.ClientManager{HTTPClient: httpClient, Config: config}
 			createdClient, _ := cm.Create(toCreate)
 
 			Expect(server.ReceivedRequests()).To(HaveLen(1))
 			Expect(createdClient.Scope[0]).To(Equal("clients.read"))
 			Expect(createdClient.Scope[1]).To(Equal("clients.write"))
-			Expect(createdClient.ClientId).To(Equal("peanuts_client"))
-			Expect(createdClient.ResourceIds[0]).To(Equal("none"))
+			Expect(createdClient.ClientID).To(Equal("peanuts_client"))
+			Expect(createdClient.ResourceIDs[0]).To(Equal("none"))
 			Expect(createdClient.AuthorizedGrantTypes[0]).To(Equal("client_credentials"))
 			Expect(createdClient.AuthorizedGrantTypes[1]).To(Equal("authorization_code"))
-			Expect(createdClient.RedirectUri[0]).To(Equal("http://snoopy.com/**"))
-			Expect(createdClient.RedirectUri[1]).To(Equal("http://woodstock.com"))
+			Expect(createdClient.RedirectURI[0]).To(Equal("http://snoopy.com/**"))
+			Expect(createdClient.RedirectURI[1]).To(Equal("http://woodstock.com"))
 			Expect(createdClient.TokenSalt).To(Equal("1SztLL"))
 			Expect(createdClient.AllowedProviders[0]).To(Equal("uaa"))
 			Expect(createdClient.AllowedProviders[1]).To(Equal("ldap"))
@@ -444,28 +444,28 @@ var _ = Describe("Clients", func() {
 				ghttp.VerifyHeaderKV("Authorization", "bearer access_token"),
 			))
 
-			toUpdate := uaa.UaaClient{
-				ClientId:             "peanuts_client",
+			toUpdate := uaa.Client{
+				ClientID:             "peanuts_client",
 				AuthorizedGrantTypes: []string{"client_credentials"},
 				Scope:                []string{"clients.read", "clients.write"},
-				ResourceIds:          []string{"none"},
-				RedirectUri:          []string{"http://snoopy.com/**", "http://woodstock.com"},
+				ResourceIDs:          []string{"none"},
+				RedirectURI:          []string{"http://snoopy.com/**", "http://woodstock.com"},
 				Authorities:          []string{"comics.read", "comics.write"},
 				DisplayName:          "The Peanuts Client",
 			}
 
-			cm := &uaa.ClientManager{httpClient, config}
+			cm := &uaa.ClientManager{HTTPClient: httpClient, Config: config}
 			updatedClient, _ := cm.Update(toUpdate)
 
 			Expect(server.ReceivedRequests()).To(HaveLen(1))
 			Expect(updatedClient.Scope[0]).To(Equal("clients.read"))
 			Expect(updatedClient.Scope[1]).To(Equal("clients.write"))
-			Expect(updatedClient.ClientId).To(Equal("peanuts_client"))
-			Expect(updatedClient.ResourceIds[0]).To(Equal("none"))
+			Expect(updatedClient.ClientID).To(Equal("peanuts_client"))
+			Expect(updatedClient.ResourceIDs[0]).To(Equal("none"))
 			Expect(updatedClient.AuthorizedGrantTypes[0]).To(Equal("client_credentials"))
 			Expect(updatedClient.AuthorizedGrantTypes[1]).To(Equal("authorization_code"))
-			Expect(updatedClient.RedirectUri[0]).To(Equal("http://snoopy.com/**"))
-			Expect(updatedClient.RedirectUri[1]).To(Equal("http://woodstock.com"))
+			Expect(updatedClient.RedirectURI[0]).To(Equal("http://snoopy.com/**"))
+			Expect(updatedClient.RedirectURI[1]).To(Equal("http://woodstock.com"))
 			Expect(updatedClient.TokenSalt).To(Equal("1SztLL"))
 			Expect(updatedClient.AllowedProviders[0]).To(Equal("uaa"))
 			Expect(updatedClient.AllowedProviders[1]).To(Equal("ldap"))
@@ -483,10 +483,10 @@ var _ = Describe("Clients", func() {
 				ghttp.VerifyHeaderKV("Accept", "application/json"),
 				ghttp.VerifyHeaderKV("Content-Type", "application/json"),
 				ghttp.VerifyHeaderKV("Authorization", "bearer access_token"),
-				ghttp.VerifyJSON(`{"clientId": "peanuts_client", "secret": "new_secret"}`),
+				ghttp.VerifyJSON(`{"clientID": "peanuts_client", "secret": "new_secret"}`),
 			))
 
-			cm := &uaa.ClientManager{httpClient, config}
+			cm := &uaa.ClientManager{HTTPClient: httpClient, Config: config}
 			cm.ChangeSecret("peanuts_client", "new_secret")
 
 			Expect(server.ReceivedRequests()).To(HaveLen(1))
@@ -499,10 +499,10 @@ var _ = Describe("Clients", func() {
 				ghttp.VerifyHeaderKV("Accept", "application/json"),
 				ghttp.VerifyHeaderKV("Content-Type", "application/json"),
 				ghttp.VerifyHeaderKV("Authorization", "bearer access_token"),
-				ghttp.VerifyJSON(`{"clientId": "peanuts_client", "secret": "new_secret"}`),
+				ghttp.VerifyJSON(`{"clientID": "peanuts_client", "secret": "new_secret"}`),
 			))
 
-			cm := &uaa.ClientManager{httpClient, config}
+			cm := &uaa.ClientManager{HTTPClient: httpClient, Config: config}
 			err := cm.ChangeSecret("peanuts_client", "new_secret")
 
 			Expect(server.ReceivedRequests()).To(HaveLen(1))
@@ -515,15 +515,15 @@ var _ = Describe("Clients", func() {
 			ghttp.RespondWith(200, "{unparsable}"),
 		))
 
-		cm := &uaa.ClientManager{httpClient, config}
-		_, err := cm.Update(uaa.UaaClient{ClientId: "peanuts_client"})
+		cm := &uaa.ClientManager{HTTPClient: httpClient, Config: config}
+		_, err := cm.Update(uaa.Client{ClientID: "peanuts_client"})
 
 		Expect(server.ReceivedRequests()).To(HaveLen(1))
 		Expect(err).NotTo(BeNil())
 	})
 
 	Describe("List", func() {
-		const ClientsListResponseJsonPage1 = `{
+		const ClientsListResponseJSONPage1 = `{
 		  "resources" : [ {
 			"client_id" : "client1"
 		  },
@@ -544,15 +544,15 @@ var _ = Describe("Clients", func() {
 			// expect the three calls to each get a different response.
 			server.RouteToHandler("GET", "/oauth/clients", ghttp.CombineHandlers(
 				ghttp.VerifyRequest("GET", "/oauth/clients"),
-				ghttp.RespondWith(http.StatusOK, ClientsListResponseJsonPage1),
+				ghttp.RespondWith(http.StatusOK, ClientsListResponseJSONPage1),
 			))
 
-			cm := &uaa.ClientManager{httpClient, config}
+			cm := &uaa.ClientManager{HTTPClient: httpClient, Config: config}
 			clientList, err := cm.List()
 
 			Expect(server.ReceivedRequests()).To(HaveLen(3))
 			Expect(clientList).To(HaveLen(6))
-			Expect(clientList[0].ClientId).To(Equal("client1"))
+			Expect(clientList[0].ClientID).To(Equal("client1"))
 			Expect(err).To(BeNil())
 		})
 
@@ -562,7 +562,7 @@ var _ = Describe("Clients", func() {
 				ghttp.RespondWith(http.StatusInternalServerError, ""),
 			))
 
-			cm := &uaa.ClientManager{httpClient, config}
+			cm := &uaa.ClientManager{HTTPClient: httpClient, Config: config}
 			_, err := cm.List()
 
 			Expect(server.ReceivedRequests()).To(HaveLen(1))
@@ -575,7 +575,7 @@ var _ = Describe("Clients", func() {
 				ghttp.RespondWith(http.StatusInternalServerError, "{garbage}"),
 			))
 
-			cm := &uaa.ClientManager{httpClient, config}
+			cm := &uaa.ClientManager{HTTPClient: httpClient, Config: config}
 			_, err := cm.List()
 
 			Expect(server.ReceivedRequests()).To(HaveLen(1))

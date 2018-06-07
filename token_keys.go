@@ -5,15 +5,18 @@ import (
 	"net/http"
 )
 
+// Keys is a slice of JSON Web Keys.
 type Keys struct {
-	Keys []JWK
+	Keys []JWK `json:"keys"`
 }
 
+// TokenKeys gets the JSON Web Token signing keys with the given client and
+// config.
 func TokenKeys(client *http.Client, config Config) ([]JWK, error) {
-	body, err := UnauthenticatedRequester{}.Get(client, config, "/token_keys", "")
+	body, err := UnauthenticatedRequestor{}.Get(client, config, "/token_keys", "")
 	if err != nil {
-		key, err := TokenKey(client, config)
-		return []JWK{key}, err
+		key, e := TokenKey(client, config)
+		return []JWK{key}, e
 	}
 
 	keys := Keys{}

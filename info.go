@@ -5,13 +5,14 @@ import (
 	"net/http"
 )
 
-type UaaInfo struct {
+// Info is information about the UAA server.
+type Info struct {
 	App            uaaApp              `json:"app"`
 	Links          uaaLinks            `json:"links"`
 	Prompts        map[string][]string `json:"prompts"`
 	ZoneName       string              `json:"zone_name"`
-	EntityId       string              `json:"entityID"`
-	CommitId       string              `json:"commit_id"`
+	EntityID       string              `json:"entityID"`
+	CommitID       string              `json:"commit_id"`
 	Timestamp      string              `json:"timestamp"`
 	IdpDefinitions map[string]string   `json:"idpDefinitions"`
 }
@@ -27,16 +28,18 @@ type uaaLinks struct {
 	Login          string `json:"login"`
 }
 
-func Info(client *http.Client, config Config) (UaaInfo, error) {
-	bytes, err := UnauthenticatedRequester{}.Get(client, config, "info", "")
+// GetInfo gets server information
+// http://docs.cloudfoundry.org/api/uaa/version/4.14.0/index.html#server-information-2.
+func GetInfo(client *http.Client, config Config) (Info, error) {
+	bytes, err := UnauthenticatedRequestor{}.Get(client, config, "info", "")
 	if err != nil {
-		return UaaInfo{}, err
+		return Info{}, err
 	}
 
-	info := UaaInfo{}
+	info := Info{}
 	err = json.Unmarshal(bytes, &info)
 	if err != nil {
-		return UaaInfo{}, parseError("", bytes)
+		return Info{}, parseError("", bytes)
 	}
 
 	return info, err

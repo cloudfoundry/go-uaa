@@ -5,6 +5,7 @@ import (
 	"net/http"
 )
 
+// JWK represents a JSON Web Key (https://tools.ietf.org/html/rfc7517).
 type JWK struct {
 	Kty   string `json:"kty"`
 	E     string `json:"e,omitempty"`
@@ -15,8 +16,10 @@ type JWK struct {
 	N     string `json:"n,omitempty"`
 }
 
+// TokenKey retrieves a JWK from the token_key endpoint
+// (http://docs.cloudfoundry.org/api/uaa/version/4.14.0/index.html#token-key-s).
 func TokenKey(client *http.Client, config Config) (JWK, error) {
-	body, err := UnauthenticatedRequester{}.Get(client, config, "token_key", "")
+	body, err := UnauthenticatedRequestor{}.Get(client, config, "token_key", "")
 	if err != nil {
 		return JWK{}, err
 	}

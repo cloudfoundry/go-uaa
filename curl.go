@@ -9,19 +9,22 @@ import (
 	"net/textproto"
 	"strings"
 
-	"github.com/cloudfoundry-community/uaa/utils"
+	"github.com/cloudfoundry-community/uaa/internal/utils"
 )
 
+// CurlManager allows you to make arbitrary requests to the UAA API.
 type CurlManager struct {
-	HttpClient *http.Client
+	HTTPClient *http.Client
 	Config     Config
 }
 
+// Curl makes a request to the UAA API with the given path, method, data, and
+// headers.
 func (cm CurlManager) Curl(path, method, data string, headers []string) (resHeaders, resBody string, err error) {
 	target := cm.Config.GetActiveTarget()
 	context := target.GetActiveContext()
 
-	url, err := utils.BuildUrl(target.BaseUrl, path)
+	url, err := utils.BuildURL(target.BaseURL, path)
 	if err != nil {
 		return
 	}
@@ -43,7 +46,7 @@ func (cm CurlManager) Curl(path, method, data string, headers []string) (resHead
 		logRequest(req)
 	}
 
-	resp, err := cm.HttpClient.Do(req)
+	resp, err := cm.HTTPClient.Do(req)
 	if err != nil {
 		if cm.Config.Verbose {
 			fmt.Printf("%v\n\n", err)
