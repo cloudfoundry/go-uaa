@@ -23,7 +23,7 @@ type Group struct {
 	ID          string        `json:"id,omitempty"`
 	Meta        *Meta         `json:"meta,omitempty"`
 	DisplayName string        `json:"displayName,omitempty"`
-	ZoneID      string        `json:"zoneID,omitempty"`
+	ZoneID      string        `json:"zoneId,omitempty"`
 	Description string        `json:"description,omitempty"`
 	Members     []GroupMember `json:"members,omitempty"`
 	Schemas     []string      `json:"schemas,omitempty"`

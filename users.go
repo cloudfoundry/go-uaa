@@ -42,8 +42,8 @@ type UserGroup struct {
 // Approval is a record of the user's explicit approval or rejection for an
 // application's request for delegated permissions.
 type Approval struct {
-	UserID        string `json:"userID,omitempty"`
-	ClientID      string `json:"clientID,omitempty"`
+	UserID        string `json:"userId,omitempty"`
+	ClientID      string `json:"clientId,omitempty"`
 	Scope         string `json:"scope,omitempty"`
 	Status        string `json:"status,omitempty"`
 	LastUpdatedAt string `json:"lastUpdatedAt,omitempty"`
@@ -60,7 +60,7 @@ type PhoneNumber struct {
 type User struct {
 	ID                   string        `json:"id,omitempty"`
 	Password             string        `json:"password,omitempty"`
-	ExternalID           string        `json:"externalID,omitempty"`
+	ExternalID           string        `json:"externalId,omitempty"`
 	Meta                 *Meta         `json:"meta,omitempty"`
 	Username             string        `json:"userName,omitempty"`
 	Name                 *UserName     `json:"name,omitempty"`
@@ -71,7 +71,7 @@ type User struct {
 	Active               *bool         `json:"active,omitempty"`
 	Verified             *bool         `json:"verified,omitempty"`
 	Origin               string        `json:"origin,omitempty"`
-	ZoneID               string        `json:"zoneID,omitempty"`
+	ZoneID               string        `json:"zoneId,omitempty"`
 	PasswordLastModified string        `json:"passwordLastModified,omitempty"`
 	PreviousLogonTime    int           `json:"previousLogonTime,omitempty"`
 	LastLogonTime        int           `json:"lastLogonTime,omitempty"`
