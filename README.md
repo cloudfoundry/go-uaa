@@ -1,8 +1,8 @@
-# `uaa` [![Travis-CI](https://travis-ci.org/cloudfoundry-community/uaa.svg)](https://travis-ci.org/cloudfoundry-community/uaa) [![GoDoc](https://godoc.org/github.com/cloudfoundry-community/go-uaa?status.svg)](http://godoc.org/github.com/cloudfoundry-community/go-uaa) [![Report card](https://goreportcard.com/badge/github.com/cloudfoundry-community/go-uaa)](https://goreportcard.com/report/github.com/cloudfoundry-community/go-uaa)
+# `go-uaa` [![Travis-CI](https://travis-ci.org/cloudfoundry-community/uaa.svg)](https://travis-ci.org/cloudfoundry-community/uaa) [![GoDoc](https://godoc.org/github.com/cloudfoundry-community/go-uaa?status.svg)](http://godoc.org/github.com/cloudfoundry-community/go-uaa) [![Report card](https://goreportcard.com/badge/github.com/cloudfoundry-community/go-uaa)](https://goreportcard.com/report/github.com/cloudfoundry-community/go-uaa)
 
 ### Overview
 
-`uaa` is a client library for the [UAA API](https://docs.cloudfoundry.org/api/uaa/).
+`go-uaa` is a client library for the [UAA API](https://docs.cloudfoundry.org/api/uaa/).
 
 ### Usage
 
