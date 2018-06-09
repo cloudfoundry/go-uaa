@@ -1,7 +1,6 @@
 package uaa
 
 import (
-	"encoding/json"
 	"net/http"
 )
 
@@ -30,17 +29,10 @@ type uaaLinks struct {
 
 // GetInfo gets server information
 // http://docs.cloudfoundry.org/api/uaa/version/4.14.0/index.html#server-information-2.
-func GetInfo(client *http.Client, config Config) (Info, error) {
-	bytes, err := UnauthenticatedRequestor{}.Get(client, config, "info", "")
-	if err != nil {
-		return Info{}, err
-	}
+func (a *API) GetInfo() (*Info, error) {
+	url := urlWithPath(*a.TargetURL, "info")
 
-	info := Info{}
-	err = json.Unmarshal(bytes, &info)
-	if err != nil {
-		return Info{}, parseError("", bytes)
-	}
-
+	info := &Info{}
+	err := a.doJSON(http.MethodGet, &url, nil, info, false)
 	return info, err
 }

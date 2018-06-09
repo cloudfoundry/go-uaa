@@ -2,108 +2,141 @@ package uaa_test
 
 import (
 	"net/http"
+	"net/http/httptest"
+	"net/url"
 
-	"github.com/onsi/gomega/ghttp"
+	"testing"
 
-	. "github.com/cloudfoundry-community/go-uaa"
-	. "github.com/onsi/ginkgo"
+	uaa "github.com/cloudfoundry-community/go-uaa"
 	. "github.com/onsi/gomega"
+
+	"github.com/sclevine/spec"
+	"github.com/sclevine/spec/report"
 )
 
-var _ = Describe("Info", func() {
+func TestInfo(t *testing.T) {
+	spec.Run(t, "Info", testInfo, spec.Report(report.Terminal{}))
+}
+
+const InfoResponseJSON string = `{
+	"app": {
+	"version": "4.5.0"
+	},
+	"links": {
+	"uaa": "https://uaa.run.pivotal.io",
+	"passwd": "https://account.run.pivotal.io/forgot-password",
+	"login": "https://login.run.pivotal.io",
+	"register": "https://account.run.pivotal.io/sign-up"
+	},
+	"zone_name": "uaa",
+	"entityID": "login.run.pivotal.io",
+	"commit_id": "df80f63",
+	"idpDefinitions": {
+	 "SAML" : "http://localhost:8080/uaa/saml/discovery?returnIDParam=idp&entityID=cloudfoundry-saml-login&idp=SAML&isPassive=true"
+	},
+	"prompts": {
+	"username": [
+		"text",
+		"Email"
+	],
+	"password": [
+		"password",
+		"Password"
+	]
+	},
+	"timestamp": "2017-07-21T22:45:01+0000"
+}`
+
+func testInfo(t *testing.T, when spec.G, it spec.S) {
 	var (
-		server *ghttp.Server
-		config Config
-		client *http.Client
+		s            *httptest.Server
+		a            *uaa.API
+		h            http.Handler
+		handlerCalls int
 	)
 
-	const InfoResponseJSON string = `{
-	  "app": {
-		"version": "4.5.0"
-	  },
-	  "links": {
-		"uaa": "https://uaa.run.pivotal.io",
-		"passwd": "https://account.run.pivotal.io/forgot-password",
-		"login": "https://login.run.pivotal.io",
-		"register": "https://account.run.pivotal.io/sign-up"
-	  },
-	  "zone_name": "uaa",
-	  "entityID": "login.run.pivotal.io",
-	  "commit_id": "df80f63",
-	  "idpDefinitions": {
-	   "SAML" : "http://localhost:8080/uaa/saml/discovery?returnIDParam=idp&entityID=cloudfoundry-saml-login&idp=SAML&isPassive=true"
-	  },
-	  "prompts": {
-		"username": [
-		  "text",
-		  "Email"
-		],
-		"password": [
-		  "password",
-		  "Password"
-		]
-	  },
-	  "timestamp": "2017-07-21T22:45:01+0000"
-	}`
-
-	BeforeEach(func() {
-		server = ghttp.NewServer()
-		client = &http.Client{}
-		config = NewConfigWithServerURL(server.URL())
+	it.Before(func() {
+		RegisterTestingT(t)
+		handlerCalls = 0
+		s = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			handlerCalls = handlerCalls + 1
+			h.ServeHTTP(w, req)
+		}))
+		url, _ := url.Parse(s.URL)
+		client := &http.Client{}
+		a = &uaa.API{
+			UnauthenticatedClient: client,
+			AuthenticatedClient:   client,
+			TargetURL:             url,
+		}
 	})
 
-	AfterEach(func() {
-		server.Close()
+	it.After(func() {
+		if s != nil {
+			s.Close()
+		}
 	})
 
-	It("calls the /info endpoint", func() {
-		server.RouteToHandler("GET", "/info", ghttp.CombineHandlers(
-			ghttp.RespondWith(200, InfoResponseJSON),
-			ghttp.VerifyRequest("GET", "/info"),
-			ghttp.VerifyHeaderKV("Accept", "application/json"),
-		))
+	when("the info endpoint responds with valid info", func() {
+		it.Before(func() {
+			h = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+				Expect(req.Method).To(Equal(http.MethodGet))
+				Expect(req.URL.Path).To(Equal("/info"))
+				Expect(req.Header.Get("Accept")).To(Equal("application/json"))
+				w.Write([]byte(InfoResponseJSON))
+			})
+		})
 
-		infoResponse, _ := GetInfo(client, config)
-
-		Expect(server.ReceivedRequests()).To(HaveLen(1))
-		Expect(infoResponse.App.Version).To(Equal("4.5.0"))
-		Expect(infoResponse.Links.ForgotPassword).To(Equal("https://account.run.pivotal.io/forgot-password"))
-		Expect(infoResponse.Links.Uaa).To(Equal("https://uaa.run.pivotal.io"))
-		Expect(infoResponse.Links.Registration).To(Equal("https://account.run.pivotal.io/sign-up"))
-		Expect(infoResponse.Links.Login).To(Equal("https://login.run.pivotal.io"))
-		Expect(infoResponse.ZoneName).To(Equal("uaa"))
-		Expect(infoResponse.EntityID).To(Equal("login.run.pivotal.io"))
-		Expect(infoResponse.CommitID).To(Equal("df80f63"))
-		Expect(infoResponse.IdpDefinitions["SAML"]).To(Equal("http://localhost:8080/uaa/saml/discovery?returnIDParam=idp&entityID=cloudfoundry-saml-login&idp=SAML&isPassive=true"))
-		Expect(infoResponse.Prompts["username"]).To(Equal([]string{"text", "Email"}))
-		Expect(infoResponse.Prompts["password"]).To(Equal([]string{"password", "Password"}))
-		Expect(infoResponse.Timestamp).To(Equal("2017-07-21T22:45:01+0000"))
+		it("calls the /info endpoint", func() {
+			infoResponse, _ := a.GetInfo()
+			Expect(handlerCalls).To(Equal(1))
+			Expect(infoResponse.App.Version).To(Equal("4.5.0"))
+			Expect(infoResponse.Links.ForgotPassword).To(Equal("https://account.run.pivotal.io/forgot-password"))
+			Expect(infoResponse.Links.Uaa).To(Equal("https://uaa.run.pivotal.io"))
+			Expect(infoResponse.Links.Registration).To(Equal("https://account.run.pivotal.io/sign-up"))
+			Expect(infoResponse.Links.Login).To(Equal("https://login.run.pivotal.io"))
+			Expect(infoResponse.ZoneName).To(Equal("uaa"))
+			Expect(infoResponse.EntityID).To(Equal("login.run.pivotal.io"))
+			Expect(infoResponse.CommitID).To(Equal("df80f63"))
+			Expect(infoResponse.IdpDefinitions["SAML"]).To(Equal("http://localhost:8080/uaa/saml/discovery?returnIDParam=idp&entityID=cloudfoundry-saml-login&idp=SAML&isPassive=true"))
+			Expect(infoResponse.Prompts["username"]).To(Equal([]string{"text", "Email"}))
+			Expect(infoResponse.Prompts["password"]).To(Equal([]string{"password", "Password"}))
+			Expect(infoResponse.Timestamp).To(Equal("2017-07-21T22:45:01+0000"))
+		})
 	})
 
-	It("returns helpful error when /info request fails", func() {
-		server.RouteToHandler("GET", "/info", ghttp.CombineHandlers(
-			ghttp.RespondWith(500, ""),
-			ghttp.VerifyRequest("GET", "/info"),
-			ghttp.VerifyHeaderKV("Accept", "application/json"),
-		))
+	when("the info endpoint responds with an error", func() {
+		it.Before(func() {
+			h = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+				Expect(req.Method).To(Equal(http.MethodGet))
+				Expect(req.URL.Path).To(Equal("/info"))
+				Expect(req.Header.Get("Accept")).To(Equal("application/json"))
+				w.WriteHeader(http.StatusInternalServerError)
+			})
+		})
 
-		_, err := GetInfo(client, config)
-
-		Expect(err).NotTo(BeNil())
-		Expect(err.Error()).To(ContainSubstring("An unknown error occurred while calling"))
+		it("returns a helpful error", func() {
+			_, err := a.GetInfo()
+			Expect(err).NotTo(BeNil())
+			Expect(err.Error()).To(ContainSubstring("An unknown error occurred while calling"))
+		})
 	})
 
-	It("returns helpful error when /info response can't be parsed", func() {
-		server.RouteToHandler("GET", "/info", ghttp.CombineHandlers(
-			ghttp.RespondWith(200, "{unparsable-json-response}"),
-			ghttp.VerifyRequest("GET", "/info"),
-			ghttp.VerifyHeaderKV("Accept", "application/json"),
-		))
+	when("the info endpoint responds with unparsable JSON", func() {
+		it.Before(func() {
+			h = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+				Expect(req.Method).To(Equal(http.MethodGet))
+				Expect(req.URL.Path).To(Equal("/info"))
+				Expect(req.Header.Get("Accept")).To(Equal("application/json"))
+				w.Write([]byte("{unparsable-json-response}"))
+			})
+		})
 
-		_, err := GetInfo(client, config)
-
-		Expect(err).NotTo(BeNil())
-		Expect(err.Error()).To(ContainSubstring("An unknown error occurred while parsing response from"))
-		Expect(err.Error()).To(ContainSubstring("Response was {unparsable-json-response}"))
+		it("returns a helpful error", func() {
+			_, err := a.GetInfo()
+			Expect(err).NotTo(BeNil())
+			Expect(err.Error()).To(ContainSubstring("An unknown error occurred while parsing response from"))
+			Expect(err.Error()).To(ContainSubstring("Response was {unparsable-json-response}"))
+		})
 	})
-})
+}
