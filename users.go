@@ -78,19 +78,18 @@ type User struct {
 	Schemas              []string      `json:"schemas,omitempty"`
 }
 
-// UserManager allows you to interact with the Users resource.
-type UserManager struct {
-	HTTPClient *http.Client
-	Config     Config
+// paginatedUserList is the response from the API for a single page of users.
+type paginatedUserList struct {
+	Page
+	Resources []User   `json:"resources"`
+	Schemas   []string `json:"schemas"`
 }
 
-// PaginatedUserList is the response from the API for a single page of users.
-type PaginatedUserList struct {
-	Resources    []User   `json:"resources"`
-	StartIndex   int      `json:"startIndex"`
-	ItemsPerPage int      `json:"itemsPerPage"`
-	TotalResults int      `json:"totalResults"`
-	Schemas      []string `json:"schemas"`
+// Page represents a page of information returned from the UAA API.
+type Page struct {
+	StartIndex   int `json:"startIndex"`
+	ItemsPerPage int `json:"itemsPerPage"`
+	TotalResults int `json:"totalResults"`
 }
 
 // GetUser with the given userID
@@ -182,13 +181,6 @@ func (a *API) ListAllUsers(filter, sortBy, attributes string, sortOrder SortOrde
 	return results, nil
 }
 
-// Page represents a page of information returned from the UAA API.
-type Page struct {
-	StartIndex   int
-	ItemsPerPage int
-	TotalResults int
-}
-
 // ListUsers with the given filter, sortBy, attributes, sortOrder, startIndex
 // (1-based), and count (default 100).
 // If successful, ListUsers returns the users and the total itemsPerPage of users for
@@ -218,7 +210,7 @@ func (a *API) ListUsers(filter string, sortBy string, attributes string, sortOrd
 	query.Set("count", strconv.Itoa(itemsPerPage))
 	u.RawQuery = query.Encode()
 
-	users := &PaginatedUserList{}
+	users := &paginatedUserList{}
 	err := a.doJSON(http.MethodGet, &u, nil, users, true)
 	if err != nil {
 		return nil, Page{}, err
