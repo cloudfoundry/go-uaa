@@ -2,26 +2,32 @@ package uaa_test
 
 import (
 	"net/http"
+	"net/http/httptest"
+	"net/url"
+	"testing"
 
-	"github.com/onsi/gomega/ghttp"
-
-	. "github.com/cloudfoundry-community/go-uaa"
-	. "github.com/onsi/ginkgo"
+	uaa "github.com/cloudfoundry-community/go-uaa"
 	. "github.com/onsi/gomega"
+	"github.com/sclevine/spec"
+	"github.com/sclevine/spec/report"
 )
 
-var _ = Describe("Me", func() {
+func TestMe(t *testing.T) {
+	spec.Run(t, "Me", testMe, spec.Report(report.Terminal{}))
+}
+
+func testMe(t *testing.T, when spec.G, it spec.S) {
 	var (
-		server       *ghttp.Server
-		client       *http.Client
-		config       Config
+		s            *httptest.Server
+		handler      http.Handler
+		called       int
+		a            *uaa.API
 		userinfoJSON string
 	)
 
-	BeforeEach(func() {
-		server = ghttp.NewServer()
-		client = &http.Client{}
-		config = NewConfigWithServerURL(server.URL())
+	it.Before(func() {
+		RegisterTestingT(t)
+		called = 0
 		userinfoJSON = `{
 		  "user_id": "d6ef6c2e-02f6-477a-a7c6-18e27f9a6e87",
 		  "sub": "d6ef6c2e-02f6-477a-a7c6-18e27f9a6e87",
@@ -33,59 +39,72 @@ var _ = Describe("Me", func() {
 		  "previous_logon_time": 1503123277743,
 		  "name": "Charlie Brown"
 		}`
+		s = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			called = called + 1
+			Expect(handler).NotTo(BeNil())
+			handler.ServeHTTP(w, req)
+		}))
+		c := &http.Client{Transport: http.DefaultTransport}
+		u, _ := url.Parse(s.URL)
+		a = &uaa.API{
+			TargetURL:             u,
+			AuthenticatedClient:   c,
+			UnauthenticatedClient: c,
+		}
 	})
 
-	AfterEach(func() {
-		server.Close()
+	it.After(func() {
+		if s != nil {
+			s.Close()
+		}
 	})
 
-	It("calls the /userinfo endpoint", func() {
-		server.RouteToHandler("GET", "/userinfo", ghttp.CombineHandlers(
-			ghttp.RespondWith(200, userinfoJSON),
-			ghttp.VerifyRequest("GET", "/userinfo", "scheme=openid"),
-			ghttp.VerifyHeaderKV("Accept", "application/json"),
-			ghttp.VerifyHeaderKV("Authorization", "bearer access_token"),
-		))
+	it("calls the /userinfo endpoint", func() {
+		handler = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			Expect(req.Header.Get("Accept")).To(Equal("application/json"))
+			Expect(req.URL.Path).To(Equal("/userinfo"))
+			Expect(req.URL.Query().Get("scheme")).To(Equal("openid"))
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte(userinfoJSON))
+		})
 
-		config.AddContext(NewContextWithToken("access_token"))
-		userinfo, _ := Me(client, config)
-
-		Expect(server.ReceivedRequests()).To(HaveLen(1))
+		userinfo, err := a.GetMe()
+		Expect(err).NotTo(HaveOccurred())
+		Expect(userinfo).NotTo(BeNil())
+		Expect(called).To(Equal(1))
 		Expect(userinfo.UserID).To(Equal("d6ef6c2e-02f6-477a-a7c6-18e27f9a6e87"))
 		Expect(userinfo.Sub).To(Equal("d6ef6c2e-02f6-477a-a7c6-18e27f9a6e87"))
 		Expect(userinfo.Username).To(Equal("charlieb"))
 		Expect(userinfo.GivenName).To(Equal("Charlie"))
 		Expect(userinfo.FamilyName).To(Equal("Brown"))
-
 		Expect(userinfo.Email).To(Equal("charlieb@peanuts.com"))
 	})
 
-	It("returns helpful error when /userinfo request fails", func() {
-		server.RouteToHandler("GET", "/userinfo", ghttp.CombineHandlers(
-			ghttp.VerifyRequest("GET", "/userinfo", "scheme=openid"),
-			ghttp.RespondWith(500, "error response"),
-			ghttp.VerifyRequest("GET", "/userinfo"),
-		))
-
-		config.AddContext(NewContextWithToken("access_token"))
-		_, err := Me(client, config)
-
-		Expect(err).NotTo(BeNil())
+	it("returns helpful error when /userinfo request fails", func() {
+		handler = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			Expect(req.Header.Get("Accept")).To(Equal("application/json"))
+			Expect(req.URL.Path).To(Equal("/userinfo"))
+			Expect(req.URL.Query().Get("scheme")).To(Equal("openid"))
+			w.WriteHeader(http.StatusInternalServerError)
+		})
+		u, err := a.GetMe()
+		Expect(err).To(HaveOccurred())
+		Expect(u).To(BeNil())
 		Expect(err.Error()).To(ContainSubstring("An unknown error occurred while calling"))
 	})
 
-	It("returns helpful error when /userinfo response can't be parsed", func() {
-		server.RouteToHandler("GET", "/userinfo", ghttp.CombineHandlers(
-			ghttp.VerifyRequest("GET", "/userinfo", "scheme=openid"),
-			ghttp.RespondWith(200, "{unparsable-json-response}"),
-			ghttp.VerifyRequest("GET", "/userinfo"),
-		))
-
-		config.AddContext(NewContextWithToken("access_token"))
-		_, err := Me(client, config)
-
-		Expect(err).NotTo(BeNil())
+	it("returns helpful error when /userinfo response can't be parsed", func() {
+		handler = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			Expect(req.Header.Get("Accept")).To(Equal("application/json"))
+			Expect(req.URL.Path).To(Equal("/userinfo"))
+			Expect(req.URL.Query().Get("scheme")).To(Equal("openid"))
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte("{unparsable-json-response}"))
+		})
+		u, err := a.GetMe()
+		Expect(err).To(HaveOccurred())
+		Expect(u).To(BeNil())
 		Expect(err.Error()).To(ContainSubstring("An unknown error occurred while parsing response from"))
 		Expect(err.Error()).To(ContainSubstring("Response was {unparsable-json-response}"))
 	})
-})
+}

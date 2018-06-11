@@ -1,7 +1,6 @@
 package uaa
 
 import (
-	"encoding/json"
 	"net/http"
 )
 
@@ -19,18 +18,15 @@ type UserInfo struct {
 	Name              string   `json:"name"`
 }
 
-// Me retrieves the UserInfo for the current user.
-func Me(client *http.Client, config Config) (UserInfo, error) {
-	body, err := AuthenticatedRequestor{}.Get(client, config, "/userinfo", "scheme=openid")
-	if err != nil {
-		return UserInfo{}, err
-	}
+// GetMe retrieves the UserInfo for the current user.
+func (a *API) GetMe() (*UserInfo, error) {
+	u := urlWithPath(*a.TargetURL, "/userinfo")
+	u.RawQuery = "scheme=openid"
 
-	info := UserInfo{}
-	err = json.Unmarshal(body, &info)
+	info := &UserInfo{}
+	err := a.doJSON(http.MethodGet, &u, nil, info, true)
 	if err != nil {
-		return UserInfo{}, parseError("/userinfo", body)
+		return nil, err
 	}
-
 	return info, nil
 }
