@@ -32,7 +32,7 @@ func (cc ClientCredentialsClient) RequestToken(httpClient *http.Client, config C
 		"grant_type":    string(CLIENTCREDENTIALS),
 		"client_id":     cc.ClientID,
 		"client_secret": cc.ClientSecret,
-		"token_format":  string(format),
+		"token_format":  format.String(),
 		"response_type": "token",
 	}
 
@@ -55,7 +55,7 @@ func (rop ResourceOwnerPasswordClient) RequestToken(httpClient *http.Client, con
 		"client_secret": rop.ClientSecret,
 		"username":      rop.Username,
 		"password":      rop.Password,
-		"token_format":  string(format),
+		"token_format":  format.String(),
 		"response_type": "token",
 	}
 
@@ -74,7 +74,7 @@ func (acc AuthorizationCodeClient) RequestToken(httpClient *http.Client, config 
 		"grant_type":    string(AUTHCODE),
 		"client_id":     acc.ClientID,
 		"client_secret": acc.ClientSecret,
-		"token_format":  string(format),
+		"token_format":  format.String(),
 		"response_type": "token",
 		"redirect_uri":  redirectURI,
 		"code":          code,
@@ -96,21 +96,21 @@ func (rc RefreshTokenClient) RequestToken(httpClient *http.Client, config Config
 		"refresh_token": refreshToken,
 		"client_id":     rc.ClientID,
 		"client_secret": rc.ClientSecret,
-		"token_format":  string(format),
+		"token_format":  format.String(),
 		"response_type": "token",
 	}
 
 	return postToOAuthToken(httpClient, config, body)
 }
 
-// TokenFormat is the format of a token.
-type TokenFormat string
-
-// Valid TokenFormat values.
-const (
-	OPAQUE = TokenFormat("opaque")
-	JWT    = TokenFormat("jwt")
-)
+// // TokenFormat is the format of a token.
+// type TokenFormat string
+//
+// // Valid TokenFormat values.
+// const (
+// 	OPAQUE = TokenFormat("opaque")
+// 	JWT    = TokenFormat("jwt")
+// )
 
 // GrantType is a type of oauth2 grant.
 type GrantType string

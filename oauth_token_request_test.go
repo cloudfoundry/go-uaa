@@ -50,12 +50,12 @@ var _ = Describe("OauthTokenRequest", func() {
 				ghttp.VerifyFormKV("client_id", "identity"),
 				ghttp.VerifyFormKV("client_secret", "identitysecret"),
 				ghttp.VerifyFormKV("grant_type", "client_credentials"),
-				ghttp.VerifyFormKV("token_format", string(OPAQUE)),
+				ghttp.VerifyFormKV("token_format", OpaqueToken.String()),
 				ghttp.VerifyFormKV("response_type", "token"),
 			))
 
 			ccClient := ClientCredentialsClient{ClientID: "identity", ClientSecret: "identitysecret"}
-			tokenResponse, _ := ccClient.RequestToken(client, config, OPAQUE)
+			tokenResponse, _ := ccClient.RequestToken(client, config, OpaqueToken)
 
 			Expect(server.ReceivedRequests()).To(HaveLen(1))
 			Expect(tokenResponse.AccessToken).To(Equal("bc4885d950854fed9a938e96b13ca519"))
@@ -72,7 +72,7 @@ var _ = Describe("OauthTokenRequest", func() {
 			))
 
 			ccClient := ClientCredentialsClient{ClientID: "identity", ClientSecret: "identitysecret"}
-			_, err := ccClient.RequestToken(client, config, OPAQUE)
+			_, err := ccClient.RequestToken(client, config, OpaqueToken)
 
 			Expect(server.ReceivedRequests()).To(HaveLen(1))
 			Expect(err).NotTo(BeNil())
@@ -89,7 +89,7 @@ var _ = Describe("OauthTokenRequest", func() {
 				ghttp.VerifyFormKV("client_id", "identity"),
 				ghttp.VerifyFormKV("client_secret", "identitysecret"),
 				ghttp.VerifyFormKV("grant_type", "password"),
-				ghttp.VerifyFormKV("token_format", string(OPAQUE)),
+				ghttp.VerifyFormKV("token_format", OpaqueToken.String()),
 				ghttp.VerifyFormKV("response_type", "token"),
 				ghttp.VerifyFormKV("username", "woodstock"),
 				ghttp.VerifyFormKV("password", "birdsrule"),
@@ -101,7 +101,7 @@ var _ = Describe("OauthTokenRequest", func() {
 				Username:     "woodstock",
 				Password:     "birdsrule",
 			}
-			tokenResponse, _ := ropClient.RequestToken(client, config, OPAQUE)
+			tokenResponse, _ := ropClient.RequestToken(client, config, OpaqueToken)
 
 			Expect(server.ReceivedRequests()).To(HaveLen(1))
 			Expect(tokenResponse.AccessToken).To(Equal("bc4885d950854fed9a938e96b13ca519"))
@@ -123,7 +123,7 @@ var _ = Describe("OauthTokenRequest", func() {
 				Username:     "woodstock",
 				Password:     "birdsrule",
 			}
-			_, err := ropClient.RequestToken(client, config, OPAQUE)
+			_, err := ropClient.RequestToken(client, config, OpaqueToken)
 
 			Expect(server.ReceivedRequests()).To(HaveLen(1))
 			Expect(err).NotTo(BeNil())
@@ -140,7 +140,7 @@ var _ = Describe("OauthTokenRequest", func() {
 				ghttp.VerifyFormKV("client_id", "my_authcode_client"),
 				ghttp.VerifyFormKV("client_secret", "clientsecret"),
 				ghttp.VerifyFormKV("grant_type", "authorization_code"),
-				ghttp.VerifyFormKV("token_format", string(OPAQUE)),
+				ghttp.VerifyFormKV("token_format", OpaqueToken.String()),
 				ghttp.VerifyFormKV("response_type", "token"),
 				ghttp.VerifyFormKV("code", "abcde"),
 				ghttp.VerifyFormKV("redirect_uri", "http://localhost:8080"),
@@ -150,7 +150,7 @@ var _ = Describe("OauthTokenRequest", func() {
 				ClientID:     "my_authcode_client",
 				ClientSecret: "clientsecret",
 			}
-			tokenResponse, _ := authcodeClient.RequestToken(client, config, OPAQUE, "abcde", "http://localhost:8080")
+			tokenResponse, _ := authcodeClient.RequestToken(client, config, OpaqueToken, "abcde", "http://localhost:8080")
 
 			Expect(server.ReceivedRequests()).To(HaveLen(1))
 			Expect(tokenResponse.AccessToken).To(Equal("bc4885d950854fed9a938e96b13ca519"))
@@ -169,7 +169,7 @@ var _ = Describe("OauthTokenRequest", func() {
 				ghttp.VerifyFormKV("client_id", "my_authcode_client"),
 				ghttp.VerifyFormKV("client_secret", "clientsecret"),
 				ghttp.VerifyFormKV("grant_type", "authorization_code"),
-				ghttp.VerifyFormKV("token_format", string(JWT)),
+				ghttp.VerifyFormKV("token_format", JSONWebToken.String()),
 				ghttp.VerifyFormKV("response_type", "token"),
 				ghttp.VerifyFormKV("code", "abcde"),
 				ghttp.VerifyFormKV("redirect_uri", "http://localhost:8080"),
@@ -179,7 +179,7 @@ var _ = Describe("OauthTokenRequest", func() {
 				ClientID:     "my_authcode_client",
 				ClientSecret: "clientsecret",
 			}
-			tokenResponse, _ := authcodeClient.RequestToken(client, config, JWT, "abcde", "http://localhost:8080")
+			tokenResponse, _ := authcodeClient.RequestToken(client, config, JSONWebToken, "abcde", "http://localhost:8080")
 
 			Expect(server.ReceivedRequests()).To(HaveLen(1))
 			Expect(tokenResponse.AccessToken).To(Equal("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiYWRtaW4iOnRydWV9.TJVA95OrM7E2cBab30RMHrHDcEfxjoYZgeFONFh7HgQ"))
@@ -201,7 +201,7 @@ var _ = Describe("OauthTokenRequest", func() {
 				ClientSecret: "clientsecret",
 			}
 
-			_, err := authcodeClient.RequestToken(client, config, JWT, "abcde", "http://localhost:8080")
+			_, err := authcodeClient.RequestToken(client, config, JSONWebToken, "abcde", "http://localhost:8080")
 
 			Expect(server.ReceivedRequests()).To(HaveLen(1))
 			Expect(err).NotTo(BeNil())
@@ -217,7 +217,7 @@ var _ = Describe("OauthTokenRequest", func() {
 				ghttp.VerifyHeaderKV("Content-Type", "application/x-www-form-urlencoded"),
 				ghttp.VerifyFormKV("client_id", "someclient"),
 				ghttp.VerifyFormKV("client_secret", "somesecret"),
-				ghttp.VerifyFormKV("token_format", string(OPAQUE)),
+				ghttp.VerifyFormKV("token_format", OpaqueToken.String()),
 				ghttp.VerifyFormKV("grant_type", "refresh_token"),
 				ghttp.VerifyFormKV("response_type", "token"),
 				ghttp.VerifyFormKV("refresh_token", "the_refresh_token"),
@@ -227,7 +227,7 @@ var _ = Describe("OauthTokenRequest", func() {
 				ClientID:     "someclient",
 				ClientSecret: "somesecret",
 			}
-			tokenResponse, _ := refreshClient.RequestToken(client, config, OPAQUE, "the_refresh_token")
+			tokenResponse, _ := refreshClient.RequestToken(client, config, OpaqueToken, "the_refresh_token")
 
 			Expect(server.ReceivedRequests()).To(HaveLen(1))
 			Expect(tokenResponse.AccessToken).To(Equal("bc4885d950854fed9a938e96b13ca519"))

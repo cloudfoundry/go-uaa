@@ -33,17 +33,7 @@ func tokenFromInternal(t *internalToken) *oauth2.Token {
 	return tk.WithExtra(t.Raw)
 }
 
-// retrieveToken takes a *Config and uses that to retrieve an *internal.Token.
-// This token is then mapped from *internal.Token into an *oauth2.Token which is returned along with an error.
-func retrieveToken(ctx context.Context, c *Config, v url.Values) (*oauth2.Token, error) {
-	tk, err := internalRetrieveToken(ctx, c.ClientID, c.ClientSecret, c.Endpoint.TokenURL, v)
-	if err != nil {
-		return nil, err
-	}
-	return tokenFromInternal(tk), nil
-}
-
-func internalRetrieveToken(ctx context.Context, ClientID, ClientSecret, TokenURL string, v url.Values) (*internalToken, error) {
+func retrieveToken(ctx context.Context, ClientID, ClientSecret, TokenURL string, v url.Values) (*oauth2.Token, error) {
 	hc, err := ContextClient(ctx)
 	if err != nil {
 		return nil, err
@@ -112,7 +102,16 @@ func internalRetrieveToken(ctx context.Context, ClientID, ClientSecret, TokenURL
 	if token.RefreshToken == "" {
 		token.RefreshToken = v.Get("refresh_token")
 	}
-	return token, nil
+	if token == nil {
+		return nil, nil
+	}
+	tk := &oauth2.Token{
+		AccessToken:  token.AccessToken,
+		TokenType:    token.TokenType,
+		RefreshToken: token.RefreshToken,
+		Expiry:       token.Expiry,
+	}
+	return tk.WithExtra(token.Raw), nil
 }
 
 func ContextClient(ctx context.Context) (*http.Client, error) {
@@ -176,6 +175,9 @@ type Config struct {
 
 	// Scope specifies optional requested permissions.
 	Scopes []string
+
+	// EndpointParams specifies additional parameters for requests to the token endpoint.
+	EndpointParams url.Values
 }
 
 // tokenJSON is the struct representing the HTTP response from OAuth2
@@ -243,12 +245,21 @@ type tokenSource struct {
 // Token refreshes the token by using a new password credentials request.
 // tokens received this way do not include a refresh token
 func (c *tokenSource) Token() (*oauth2.Token, error) {
-	return retrieveToken(c.ctx, c.conf, url.Values{
+	v := url.Values{
 		"grant_type": {"password"},
 		"username":   {c.conf.Username},
 		"password":   {c.conf.Password},
-		"scope":      condVal(strings.Join(c.conf.Scopes, " ")),
-	})
+	}
+	if len(c.conf.Scopes) > 0 {
+		v.Set("scope", strings.Join(c.conf.Scopes, " "))
+	}
+	for k, p := range c.conf.EndpointParams {
+		if _, ok := v[k]; ok {
+			return nil, fmt.Errorf("oauth2: cannot overwrite parameter %q", k)
+		}
+		v[k] = p
+	}
+	return retrieveToken(c.ctx, c.conf.ClientID, c.conf.ClientSecret, c.conf.Endpoint.TokenURL, v)
 }
 
 func condVal(v string) []string {
