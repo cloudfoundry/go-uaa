@@ -15,29 +15,39 @@ import (
 )
 
 func (a *API) doJSON(method string, url *url.URL, body io.Reader, response interface{}, needsAuthentication bool) error {
-	bytes, err := a.do(method, url, body, needsAuthentication)
+	return a.doJSONWithHeaders(method, url, nil, body, response, needsAuthentication)
+}
+
+func (a *API) doJSONWithHeaders(method string, url *url.URL, headers map[string]string, body io.Reader, response interface{}, needsAuthentication bool) error {
+	req, err := http.NewRequest(method, url.String(), body)
+	if err != nil {
+		return err
+	}
+	for k, v := range headers {
+		req.Header.Set(k, v)
+	}
+
+	bytes, err := a.doAndRead(req, needsAuthentication)
 	if err != nil {
 		return err
 	}
 
-	if err := json.Unmarshal(bytes, response); err != nil {
-		return parseError(url.String(), bytes)
+	if response != nil {
+		if err := json.Unmarshal(bytes, response); err != nil {
+			return parseError(url.String(), bytes)
+		}
 	}
+
 	return nil
-}
-
-func (a *API) do(method string, url *url.URL, body io.Reader, needsAuthentication bool) ([]byte, error) {
-	req, err := http.NewRequest(method, url.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	return a.doAndRead(req, needsAuthentication)
 }
 
 func (a *API) doAndRead(req *http.Request, needsAuthentication bool) ([]byte, error) {
 	req.Header.Add("Accept", "application/json")
 	req.Header.Add("X-Identity-Zone-Id", a.ZoneID)
+	switch req.Method {
+	case http.MethodPut, http.MethodPost, http.MethodPatch:
+		req.Header.Add("Content-Type", "application/json")
+	}
 	if a.Verbose {
 		logRequest(req)
 	}

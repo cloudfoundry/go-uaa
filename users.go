@@ -1,6 +1,7 @@
 package uaa
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -92,29 +93,23 @@ type PaginatedUserList struct {
 	Schemas      []string `json:"schemas"`
 }
 
-// Get the user with the given userID
+// GetUser with the given userID
 // http://docs.cloudfoundry.org/api/uaa/version/4.14.0/index.html#get-3.
-func (um UserManager) Get(userID string) (User, error) {
-	url := fmt.Sprintf("%s/%s", usersEndpoint, userID)
-	bytes, err := AuthenticatedRequestor{}.Get(um.HTTPClient, um.Config, url, "")
+func (a *API) GetUser(userID string) (*User, error) {
+	u := urlWithPath(*a.TargetURL, fmt.Sprintf("%s/%s", usersEndpoint, userID))
+	user := &User{}
+	err := a.doJSON(http.MethodGet, &u, nil, user, true)
 	if err != nil {
-		return User{}, err
+		return nil, err
 	}
-
-	user := User{}
-	err = json.Unmarshal(bytes, &user)
-	if err != nil {
-		return User{}, parseError(url, bytes)
-	}
-
-	return user, err
+	return user, nil
 }
 
-// GetByUsername gets the user with the given username and origin
+// GetUserByUsername gets the user with the given username
 // http://docs.cloudfoundry.org/api/uaa/version/4.14.0/index.html#list-with-attribute-filtering.
-func (um UserManager) GetByUsername(username, origin, attributes string) (User, error) {
+func (a *API) GetUserByUsername(username, origin, attributes string) (*User, error) {
 	if username == "" {
-		return User{}, errors.New("username may not be blank")
+		return nil, errors.New("username cannot be blank")
 	}
 
 	filter := fmt.Sprintf(`userName eq "%v"`, username)
@@ -125,12 +120,12 @@ func (um UserManager) GetByUsername(username, origin, attributes string) (User, 
 		help = fmt.Sprintf(`%s in origin %v`, help, origin)
 	}
 
-	users, err := um.List(filter, "", attributes, "")
+	users, err := a.ListAllUsers(filter, "", attributes, "")
 	if err != nil {
-		return User{}, err
+		return nil, err
 	}
 	if len(users) == 0 {
-		return User{}, errors.New(help)
+		return nil, errors.New(help)
 	}
 	if len(users) > 1 && origin == "" {
 		var foundOrigins []string
@@ -140,9 +135,9 @@ func (um UserManager) GetByUsername(username, origin, attributes string) (User, 
 
 		msgTmpl := "Found users with username %v in multiple origins %v."
 		msg := fmt.Sprintf(msgTmpl, username, stringSliceStringifier(foundOrigins))
-		return User{}, errors.New(msg)
+		return nil, errors.New(msg)
 	}
-	return users[0], nil
+	return &users[0], nil
 }
 
 func stringSliceStringifier(stringsList []string) string {
@@ -159,134 +154,154 @@ const (
 	SortDescending = SortOrder("descending")
 )
 
-func getUserPage(um UserManager, query url.Values, startIndex, count int) (PaginatedUserList, error) {
-	if startIndex != 0 {
-		query.Add("startIndex", strconv.Itoa(startIndex))
+// ListAllUsers retrieves UAA users
+// http://docs.cloudfoundry.org/api/uaa/version/4.14.0/index.html#list-with-attribute-filtering.
+func (a *API) ListAllUsers(filter, sortBy, attributes string, sortOrder SortOrder) ([]User, error) {
+	page := Page{
+		StartIndex:   1,
+		ItemsPerPage: 100,
 	}
-	if count != 0 {
-		query.Add("count", strconv.Itoa(count))
-	}
+	var (
+		results     []User
+		currentPage []User
+		err         error
+	)
 
-	bytes, err := AuthenticatedRequestor{}.Get(um.HTTPClient, um.Config, usersEndpoint, query.Encode())
-	if err != nil {
-		return PaginatedUserList{}, err
-	}
+	for {
+		currentPage, page, err = a.ListUsers(filter, sortBy, attributes, sortOrder, page.StartIndex, page.ItemsPerPage)
+		if err != nil {
+			return nil, err
+		}
+		results = append(results, currentPage...)
 
-	userList := PaginatedUserList{}
-	err = json.Unmarshal(bytes, &userList)
-	if err != nil {
-		return PaginatedUserList{}, parseError(usersEndpoint, bytes)
+		if (page.StartIndex + page.ItemsPerPage) > page.TotalResults {
+			break
+		}
+		page.StartIndex = page.StartIndex + page.ItemsPerPage
 	}
-	return userList, nil
+	return results, nil
 }
 
-// List users
-// http://docs.cloudfoundry.org/api/uaa/version/4.14.0/index.html#list-with-attribute-filtering.
-func (um UserManager) List(filter, sortBy, attributes string, sortOrder SortOrder) ([]User, error) {
+// Page represents a page of information returned from the UAA API.
+type Page struct {
+	StartIndex   int
+	ItemsPerPage int
+	TotalResults int
+}
+
+// ListUsers with the given filter, sortBy, attributes, sortOrder, startIndex
+// (1-based), and count (default 100).
+// If successful, ListUsers returns the users and the total itemsPerPage of users for
+// all pages. If unsuccessful, ListUsers returns the error.
+func (a *API) ListUsers(filter string, sortBy string, attributes string, sortOrder SortOrder, startIndex int, itemsPerPage int) ([]User, Page, error) {
+	u := urlWithPath(*a.TargetURL, usersEndpoint)
 	query := url.Values{}
 	if filter != "" {
-		query.Add("filter", filter)
+		query.Set("filter", filter)
 	}
 	if attributes != "" {
-		query.Add("attributes", attributes)
+		query.Set("attributes", attributes)
 	}
 	if sortBy != "" {
-		query.Add("sortBy", sortBy)
+		query.Set("sortBy", sortBy)
 	}
 	if sortOrder != "" {
-		query.Add("sortOrder", string(sortOrder))
+		query.Set("sortOrder", string(sortOrder))
 	}
+	if startIndex <= 0 {
+		startIndex = 1
+	}
+	query.Set("startIndex", strconv.Itoa(startIndex))
+	if itemsPerPage <= 0 {
+		itemsPerPage = 100
+	}
+	query.Set("count", strconv.Itoa(itemsPerPage))
+	u.RawQuery = query.Encode()
 
-	results, err := getUserPage(um, query, 0, 0)
+	users := &PaginatedUserList{}
+	err := a.doJSON(http.MethodGet, &u, nil, users, true)
 	if err != nil {
-		return []User{}, err
+		return nil, Page{}, err
 	}
-
-	userList := results.Resources
-	startIndex, count := results.StartIndex, results.ItemsPerPage
-	for results.TotalResults > len(userList) {
-		startIndex += count
-		newResults, err := getUserPage(um, query, startIndex, count)
-		if err != nil {
-			return []User{}, err
-		}
-		userList = append(userList, newResults.Resources...)
+	page := Page{
+		StartIndex:   users.StartIndex,
+		ItemsPerPage: users.ItemsPerPage,
+		TotalResults: users.TotalResults,
 	}
-
-	return userList, nil
+	return users.Resources, page, err
 }
 
-// Create the given user
+// CreateUser creates the given user
 // http://docs.cloudfoundry.org/api/uaa/version/4.14.0/index.html#create-4.
-func (um UserManager) Create(user User) (User, error) {
-	bytes, err := AuthenticatedRequestor{}.PostJSON(um.HTTPClient, um.Config, usersEndpoint, "", user)
+func (a *API) CreateUser(user User) (*User, error) {
+	u := urlWithPath(*a.TargetURL, usersEndpoint)
+	created := &User{}
+	j, err := json.Marshal(user)
 	if err != nil {
-		return User{}, err
+		return nil, err
 	}
-
-	created := User{}
-	err = json.Unmarshal(bytes, &created)
+	err = a.doJSON(http.MethodPost, &u, bytes.NewBuffer([]byte(j)), created, true)
 	if err != nil {
-		return User{}, parseError(usersEndpoint, bytes)
+		return nil, err
 	}
-
-	return created, err
+	return created, nil
 }
 
-// Update the given user
+// UpdateUser updates the given user
 // http://docs.cloudfoundry.org/api/uaa/version/4.14.0/index.html#update-4.
-func (um UserManager) Update(user User) (User, error) {
-	bytes, err := AuthenticatedRequestor{}.PutJSON(um.HTTPClient, um.Config, usersEndpoint, "", user)
+func (a *API) UpdateUser(user User) (*User, error) {
+	u := urlWithPath(*a.TargetURL, usersEndpoint)
+	created := &User{}
+	j, err := json.Marshal(user)
 	if err != nil {
-		return User{}, err
+		return nil, err
 	}
-
-	updated := User{}
-	err = json.Unmarshal(bytes, &updated)
+	err = a.doJSON(http.MethodPut, &u, bytes.NewBuffer([]byte(j)), created, true)
 	if err != nil {
-		return User{}, parseError(usersEndpoint, bytes)
+		return nil, err
 	}
-
-	return updated, err
+	return created, nil
 }
 
-// Delete the user with the given user ID
+// DeleteUser deletes the user with the given user ID
 // http://docs.cloudfoundry.org/api/uaa/version/4.14.0/index.html#delete-4.
-func (um UserManager) Delete(userID string) (User, error) {
-	url := fmt.Sprintf("%s/%s", usersEndpoint, userID)
-	bytes, err := AuthenticatedRequestor{}.Delete(um.HTTPClient, um.Config, url, "")
-	if err != nil {
-		return User{}, err
+func (a *API) DeleteUser(userID string) (*User, error) {
+	if userID == "" {
+		return nil, errors.New("userID cannot be blank")
 	}
-
-	deleted := User{}
-	err = json.Unmarshal(bytes, &deleted)
+	u := urlWithPath(*a.TargetURL, fmt.Sprintf("%s/%s", usersEndpoint, userID))
+	deleted := &User{}
+	err := a.doJSON(http.MethodDelete, &u, nil, deleted, true)
 	if err != nil {
-		return User{}, parseError(url, bytes)
+		return nil, err
 	}
-
-	return deleted, err
+	return deleted, nil
 }
 
-// Deactivate the user with the given user ID
+// DeactivateUser deactivates the user with the given user ID
 // http://docs.cloudfoundry.org/api/uaa/version/4.14.0/index.html#patch.
-func (um UserManager) Deactivate(userID string, userMetaVersion int) error {
-	return um.setActive(false, userID, userMetaVersion)
+func (a *API) DeactivateUser(userID string, userMetaVersion int) error {
+	return a.setActive(false, userID, userMetaVersion)
 }
 
-// Activate the user with the given user ID
+// ActivateUser activates the user with the given user ID
 // http://docs.cloudfoundry.org/api/uaa/version/4.14.0/index.html#patch.
-func (um UserManager) Activate(userID string, userMetaVersion int) error {
-	return um.setActive(true, userID, userMetaVersion)
+func (a *API) ActivateUser(userID string, userMetaVersion int) error {
+	return a.setActive(true, userID, userMetaVersion)
 }
 
-func (um UserManager) setActive(active bool, userID string, userMetaVersion int) error {
-	url := fmt.Sprintf("%s/%s", usersEndpoint, userID)
-	user := User{}
+func (a *API) setActive(active bool, userID string, userMetaVersion int) error {
+	if userID == "" {
+		return errors.New("userID cannot be blank")
+	}
+	u := urlWithPath(*a.TargetURL, fmt.Sprintf("%s/%s", usersEndpoint, userID))
+	user := &User{}
 	user.Active = &active
 
 	extraHeaders := map[string]string{"If-Match": strconv.Itoa(userMetaVersion)}
-	_, err := AuthenticatedRequestor{}.PatchJSON(um.HTTPClient, um.Config, url, "", user, extraHeaders)
-
-	return err
+	j, err := json.Marshal(user)
+	if err != nil {
+		return err
+	}
+	return a.doJSONWithHeaders(http.MethodPatch, &u, extraHeaders, bytes.NewBuffer([]byte(j)), nil, true)
 }
