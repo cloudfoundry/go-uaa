@@ -2,73 +2,98 @@ package uaa_test
 
 import (
 	"encoding/json"
+	"io/ioutil"
 	"net/http"
+	"net/http/httptest"
+	"net/url"
+	"testing"
 
-	"github.com/onsi/gomega/ghttp"
-
-	. "github.com/cloudfoundry-community/go-uaa"
-
-	. "github.com/onsi/ginkgo"
+	uaa "github.com/cloudfoundry-community/go-uaa"
 	. "github.com/onsi/gomega"
+	"github.com/sclevine/spec"
+	"github.com/sclevine/spec/report"
 )
 
-var _ = Describe("Curl", func() {
+func TestCurl(t *testing.T) {
+	spec.Run(t, "Curl", testCurl, spec.Report(report.Terminal{}))
+}
+
+func testCurl(t *testing.T, when spec.G, it spec.S) {
 	var (
-		cm        CurlManager
-		uaaServer *ghttp.Server
+		s       *httptest.Server
+		handler http.Handler
+		called  int
+		a       *uaa.API
 	)
 
-	BeforeEach(func() {
-		uaaServer = ghttp.NewServer()
-		config := NewConfigWithServerURL(uaaServer.URL())
-		config.AddContext(NewContextWithToken("access_token"))
-		cm = CurlManager{HTTPClient: &http.Client{}, Config: config}
+	it.Before(func() {
+		RegisterTestingT(t)
+		called = 0
+		s = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			called = called + 1
+			Expect(handler).NotTo(BeNil())
+			handler.ServeHTTP(w, req)
+		}))
+		c := &http.Client{Transport: http.DefaultTransport}
+		u, _ := url.Parse(s.URL)
+		a = &uaa.API{
+			TargetURL:             u,
+			AuthenticatedClient:   c,
+			UnauthenticatedClient: c,
+		}
 	})
 
-	Describe("CurlManager#Curl", func() {
-		It("gets a user from the UAA by id", func() {
-			uaaServer.RouteToHandler("GET", "/Users/fb5f32e1-5cb3-49e6-93df-6df9c8c8bd70", ghttp.CombineHandlers(
-				ghttp.VerifyRequest("GET", "/Users/fb5f32e1-5cb3-49e6-93df-6df9c8c8bd70"),
-				ghttp.VerifyHeaderKV("Authorization", "bearer access_token"),
-				ghttp.VerifyHeaderKV("Accept", "application/json"),
-				ghttp.RespondWith(http.StatusOK, MarcusUserResponse),
-			))
-
-			_, resBody, err := cm.Curl("/Users/fb5f32e1-5cb3-49e6-93df-6df9c8c8bd70", "GET", "", []string{"Accept: application/json"})
-			Expect(err).NotTo(HaveOccurred())
-
-			var user User
-			err = json.Unmarshal([]byte(resBody), &user)
-			Expect(err).NotTo(HaveOccurred())
-
-			Expect(user.ID).To(Equal("fb5f32e1-5cb3-49e6-93df-6df9c8c8bd70"))
-		})
-
-		It("can POST body and multiple headers", func() {
-			reqBody := map[string]interface{}{
-				"externalID": "marcus-user",
-				"userName":   "marcus@stoicism.com",
-			}
-			uaaServer.RouteToHandler("POST", "/Users", ghttp.CombineHandlers(
-				ghttp.VerifyRequest("POST", "/Users"),
-				ghttp.VerifyHeaderKV("Authorization", "bearer access_token"),
-				ghttp.VerifyHeaderKV("Accept", "application/json"),
-				ghttp.VerifyHeaderKV("Content-Type", "application/json"),
-				ghttp.VerifyJSONRepresenting(reqBody),
-				ghttp.RespondWith(http.StatusCreated, MarcusUserResponse),
-			))
-
-			reqBodyBytes, err := json.Marshal(reqBody)
-			Expect(err).NotTo(HaveOccurred())
-
-			_, resBody, _ := cm.Curl("/Users", "POST", string(reqBodyBytes), []string{"Content-Type: application/json", "Accept: application/json"})
-
-			var user User
-			err = json.Unmarshal([]byte(resBody), &user)
-			Expect(err).NotTo(HaveOccurred())
-
-			Expect(user.ID).To(Equal("fb5f32e1-5cb3-49e6-93df-6df9c8c8bd70"))
-		})
+	it.After(func() {
+		if s != nil {
+			s.Close()
+		}
 	})
 
-})
+	it("gets a user from the UAA by id", func() {
+		handler = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			Expect(req.Header.Get("Accept")).To(Equal("application/json"))
+			Expect(req.URL.Path).To(Equal("/Users/00000000-0000-0000-0000-000000000001"))
+			Expect(req.Method).To(Equal(http.MethodGet))
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte(userResponse))
+		})
+
+		_, resBody, err := a.Curl("/Users/00000000-0000-0000-0000-000000000001", "GET", "", []string{"Accept: application/json"})
+		Expect(err).NotTo(HaveOccurred())
+
+		var user uaa.User
+		err = json.Unmarshal([]byte(resBody), &user)
+		Expect(err).NotTo(HaveOccurred())
+
+		Expect(user.ID).To(Equal("00000000-0000-0000-0000-000000000001"))
+	})
+
+	it("can POST body and multiple headers", func() {
+		reqBody := map[string]interface{}{
+			"externalID": "marcus-user",
+			"userName":   "marcus@stoicism.com",
+		}
+		reqBodyBytes, err := json.Marshal(reqBody)
+		handler = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			Expect(req.Header.Get("Accept")).To(Equal("application/json"))
+			Expect(req.Header.Get("Content-Type")).To(Equal("application/json"))
+			Expect(req.Method).To(Equal(http.MethodPost))
+			Expect(req.URL.Path).To(Equal("/Users"))
+			defer req.Body.Close()
+			body, _ := ioutil.ReadAll(req.Body)
+			Expect(body).To(MatchJSON(reqBodyBytes))
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte(userResponse))
+		})
+
+		Expect(err).NotTo(HaveOccurred())
+
+		_, resBody, _ := a.Curl("/Users", "POST", string(reqBodyBytes), []string{"Content-Type: application/json", "Accept: application/json"})
+
+		var user uaa.User
+		err = json.Unmarshal([]byte(resBody), &user)
+		Expect(err).NotTo(HaveOccurred())
+
+		Expect(user.ID).To(Equal("00000000-0000-0000-0000-000000000001"))
+	})
+}

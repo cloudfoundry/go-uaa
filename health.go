@@ -1,34 +1,16 @@
 package uaa
 
-import (
-	"net/http"
-)
-
-// HealthStatus is either ok or an error.
-type HealthStatus string
-
-const (
-	// OK is healthy.
-	OK = HealthStatus("ok")
-	// ERROR is unhealthy.
-	ERROR = HealthStatus("health_error")
-)
-
-// Health gets the health of the UAA API.
-func Health(target Target) (HealthStatus, error) {
-	url, err := buildURL(target.BaseURL, "healthz")
+// IsHealthy returns true if the UAA is healthy, false if it is unhealthy, and
+// an error if there is an issue making a request to the /healthz endpoint.
+func (a *API) IsHealthy() (bool, error) {
+	u := urlWithPath(*a.TargetURL, "/healthz")
+	resp, err := a.UnauthenticatedClient.Get(u.String())
 	if err != nil {
-		return "", err
+		return false, err
 	}
-
-	resp, err := http.Get(url.String())
-	if err != nil {
-		return "", nil
-	}
-
 	if resp.StatusCode == 200 {
-		return OK, nil
+		return true, nil
 	}
 
-	return ERROR, nil
+	return false, nil
 }

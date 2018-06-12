@@ -6,7 +6,7 @@ import (
 )
 
 const MarcusUserResponse = `{
-	  "id" : "fb5f32e1-5cb3-49e6-93df-6df9c8c8bd70",
+	  "id" : "00000000-0000-0000-0000-000000000001",
 	  "externalID" : "marcus-user",
 	  "meta" : {
 		"version" : 1,
@@ -60,7 +60,7 @@ const MarcusUserResponse = `{
 	}`
 
 const DrSeussUserResponse = `{
-	  "id" : "fb5f32e1-5cb3-49e6-93df-6df9c8c8bd70",
+	  "id" : "00000000-0000-0000-0000-000000000002",
 	  "externalID" : "seuss-user",
 	  "meta" : {
 		"version" : 1,

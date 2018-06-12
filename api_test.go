@@ -14,6 +14,27 @@ import (
 	"golang.org/x/oauth2"
 )
 
+func TestUAA(t *testing.T) {
+	spec.Run(t, "UAA", testUAA, spec.Report(report.Terminal{}))
+}
+
+func testUAA(t *testing.T, when spec.G, it spec.S) {
+	it.Before(func() {
+		RegisterTestingT(t)
+	})
+
+	when("TokenFormat.String()", func() {
+		it("prints the string representation appropriately", func() {
+			var t uaa.TokenFormat
+			Expect(t.String()).To(Equal("opaque"))
+			t = 3
+			Expect(t.String()).To(Equal(""))
+			Expect(uaa.JSONWebToken.String()).To(Equal("jwt"))
+			Expect(uaa.OpaqueToken.String()).To(Equal("opaque"))
+		})
+	})
+}
+
 func TestNew(t *testing.T) {
 	spec.Run(t, "New", testNew, spec.Report(report.Terminal{}))
 }

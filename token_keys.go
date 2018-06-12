@@ -1,7 +1,6 @@
 package uaa
 
 import (
-	"encoding/json"
 	"net/http"
 )
 
@@ -10,20 +9,17 @@ type Keys struct {
 	Keys []JWK `json:"keys"`
 }
 
-// TokenKeys gets the JSON Web Token signing keys with the given client and
-// config.
-func TokenKeys(client *http.Client, config Config) ([]JWK, error) {
-	body, err := UnauthenticatedRequestor{}.Get(client, config, "/token_keys", "")
+// TokenKeys gets the JSON Web Token signing keys for the UAA server.
+func (a *API) TokenKeys() ([]JWK, error) {
+	url := urlWithPath(*a.TargetURL, "/token_keys")
+	keys := &Keys{}
+	err := a.doJSON(http.MethodGet, &url, nil, keys, false)
 	if err != nil {
-		key, e := TokenKey(client, config)
-		return []JWK{key}, e
+		key, e := a.TokenKey()
+		if e != nil {
+			return nil, e
+		}
+		return []JWK{*key}, nil
 	}
-
-	keys := Keys{}
-	err = json.Unmarshal(body, &keys)
-	if err != nil {
-		return []JWK{}, parseError("/token_keys", body)
-	}
-
-	return keys.Keys, nil
+	return keys.Keys, err
 }

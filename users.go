@@ -6,12 +6,12 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"net/url"
 	"strconv"
 	"strings"
 )
 
-const usersEndpoint string = "/Users"
+// UsersEndpoint is the path to the users resource.
+const UsersEndpoint string = "/Users"
 
 // Meta describes the version and timestamps for a resource.
 type Meta struct {
@@ -85,25 +85,6 @@ type paginatedUserList struct {
 	Schemas   []string `json:"schemas"`
 }
 
-// Page represents a page of information returned from the UAA API.
-type Page struct {
-	StartIndex   int `json:"startIndex"`
-	ItemsPerPage int `json:"itemsPerPage"`
-	TotalResults int `json:"totalResults"`
-}
-
-// GetUser with the given userID
-// http://docs.cloudfoundry.org/api/uaa/version/4.14.0/index.html#get-3.
-func (a *API) GetUser(userID string) (*User, error) {
-	u := urlWithPath(*a.TargetURL, fmt.Sprintf("%s/%s", usersEndpoint, userID))
-	user := &User{}
-	err := a.doJSON(http.MethodGet, &u, nil, user, true)
-	if err != nil {
-		return nil, err
-	}
-	return user, nil
-}
-
 // GetUserByUsername gets the user with the given username
 // http://docs.cloudfoundry.org/api/uaa/version/4.14.0/index.html#list-with-attribute-filtering.
 func (a *API) GetUserByUsername(username, origin, attributes string) (*User, error) {
@@ -133,141 +114,10 @@ func (a *API) GetUserByUsername(username, origin, attributes string) (*User, err
 		}
 
 		msgTmpl := "Found users with username %v in multiple origins %v."
-		msg := fmt.Sprintf(msgTmpl, username, stringSliceStringifier(foundOrigins))
+		msg := fmt.Sprintf(msgTmpl, username, "["+strings.Join(foundOrigins, ", ")+"]")
 		return nil, errors.New(msg)
 	}
 	return &users[0], nil
-}
-
-func stringSliceStringifier(stringsList []string) string {
-	return "[" + strings.Join(stringsList, ", ") + "]"
-}
-
-// SortOrder defines the sort order when listing users or groups.
-type SortOrder string
-
-const (
-	// SortAscending sorts in ascending order.
-	SortAscending = SortOrder("ascending")
-	// SortDescending sorts in descending order.
-	SortDescending = SortOrder("descending")
-)
-
-// ListAllUsers retrieves UAA users
-// http://docs.cloudfoundry.org/api/uaa/version/4.14.0/index.html#list-with-attribute-filtering.
-func (a *API) ListAllUsers(filter, sortBy, attributes string, sortOrder SortOrder) ([]User, error) {
-	page := Page{
-		StartIndex:   1,
-		ItemsPerPage: 100,
-	}
-	var (
-		results     []User
-		currentPage []User
-		err         error
-	)
-
-	for {
-		currentPage, page, err = a.ListUsers(filter, sortBy, attributes, sortOrder, page.StartIndex, page.ItemsPerPage)
-		if err != nil {
-			return nil, err
-		}
-		results = append(results, currentPage...)
-
-		if (page.StartIndex + page.ItemsPerPage) > page.TotalResults {
-			break
-		}
-		page.StartIndex = page.StartIndex + page.ItemsPerPage
-	}
-	return results, nil
-}
-
-// ListUsers with the given filter, sortBy, attributes, sortOrder, startIndex
-// (1-based), and count (default 100).
-// If successful, ListUsers returns the users and the total itemsPerPage of users for
-// all pages. If unsuccessful, ListUsers returns the error.
-func (a *API) ListUsers(filter string, sortBy string, attributes string, sortOrder SortOrder, startIndex int, itemsPerPage int) ([]User, Page, error) {
-	u := urlWithPath(*a.TargetURL, usersEndpoint)
-	query := url.Values{}
-	if filter != "" {
-		query.Set("filter", filter)
-	}
-	if attributes != "" {
-		query.Set("attributes", attributes)
-	}
-	if sortBy != "" {
-		query.Set("sortBy", sortBy)
-	}
-	if sortOrder != "" {
-		query.Set("sortOrder", string(sortOrder))
-	}
-	if startIndex <= 0 {
-		startIndex = 1
-	}
-	query.Set("startIndex", strconv.Itoa(startIndex))
-	if itemsPerPage <= 0 {
-		itemsPerPage = 100
-	}
-	query.Set("count", strconv.Itoa(itemsPerPage))
-	u.RawQuery = query.Encode()
-
-	users := &paginatedUserList{}
-	err := a.doJSON(http.MethodGet, &u, nil, users, true)
-	if err != nil {
-		return nil, Page{}, err
-	}
-	page := Page{
-		StartIndex:   users.StartIndex,
-		ItemsPerPage: users.ItemsPerPage,
-		TotalResults: users.TotalResults,
-	}
-	return users.Resources, page, err
-}
-
-// CreateUser creates the given user
-// http://docs.cloudfoundry.org/api/uaa/version/4.14.0/index.html#create-4.
-func (a *API) CreateUser(user User) (*User, error) {
-	u := urlWithPath(*a.TargetURL, usersEndpoint)
-	created := &User{}
-	j, err := json.Marshal(user)
-	if err != nil {
-		return nil, err
-	}
-	err = a.doJSON(http.MethodPost, &u, bytes.NewBuffer([]byte(j)), created, true)
-	if err != nil {
-		return nil, err
-	}
-	return created, nil
-}
-
-// UpdateUser updates the given user
-// http://docs.cloudfoundry.org/api/uaa/version/4.14.0/index.html#update-4.
-func (a *API) UpdateUser(user User) (*User, error) {
-	u := urlWithPath(*a.TargetURL, usersEndpoint)
-	created := &User{}
-	j, err := json.Marshal(user)
-	if err != nil {
-		return nil, err
-	}
-	err = a.doJSON(http.MethodPut, &u, bytes.NewBuffer([]byte(j)), created, true)
-	if err != nil {
-		return nil, err
-	}
-	return created, nil
-}
-
-// DeleteUser deletes the user with the given user ID
-// http://docs.cloudfoundry.org/api/uaa/version/4.14.0/index.html#delete-4.
-func (a *API) DeleteUser(userID string) (*User, error) {
-	if userID == "" {
-		return nil, errors.New("userID cannot be blank")
-	}
-	u := urlWithPath(*a.TargetURL, fmt.Sprintf("%s/%s", usersEndpoint, userID))
-	deleted := &User{}
-	err := a.doJSON(http.MethodDelete, &u, nil, deleted, true)
-	if err != nil {
-		return nil, err
-	}
-	return deleted, nil
 }
 
 // DeactivateUser deactivates the user with the given user ID
@@ -286,7 +136,7 @@ func (a *API) setActive(active bool, userID string, userMetaVersion int) error {
 	if userID == "" {
 		return errors.New("userID cannot be blank")
 	}
-	u := urlWithPath(*a.TargetURL, fmt.Sprintf("%s/%s", usersEndpoint, userID))
+	u := urlWithPath(*a.TargetURL, fmt.Sprintf("%s/%s", UsersEndpoint, userID))
 	user := &User{}
 	user.Active = &active
 

@@ -2,27 +2,31 @@ package uaa_test
 
 import (
 	"net/http"
+	"net/http/httptest"
+	"net/url"
+	"testing"
 
-	"github.com/onsi/gomega/ghttp"
-
-	. "github.com/cloudfoundry-community/go-uaa"
-	. "github.com/onsi/ginkgo"
+	uaa "github.com/cloudfoundry-community/go-uaa"
 	. "github.com/onsi/gomega"
+	"github.com/sclevine/spec"
+	"github.com/sclevine/spec/report"
 )
 
-var _ = Describe("TokenKey", func() {
+func TestTokenKey(t *testing.T) {
+	spec.Run(t, "TokenKey", testTokenKey, spec.Report(report.Terminal{}))
+}
+
+func testTokenKey(t *testing.T, when spec.G, it spec.S) {
 	var (
-		server            *ghttp.Server
-		client            *http.Client
-		config            Config
+		s                 *httptest.Server
+		handler           http.Handler
+		called            int
+		a                 *uaa.API
 		asymmetricKeyJSON string
 	)
 
-	BeforeEach(func() {
-		server = ghttp.NewServer()
-		client = &http.Client{}
-		config = NewConfigWithServerURL(server.URL())
-
+	it.Before(func() {
+		RegisterTestingT(t)
 		asymmetricKeyJSON = `{
 		  "kty": "RSA",
 		  "e": "AQAB",
@@ -32,22 +36,38 @@ var _ = Describe("TokenKey", func() {
 		  "value": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAyH6kYCP29faDAUPKtei3\nV/Zh8eCHyHRDHrD0iosvgHuaakK1AFHjD19ojuPiTQm8r8nEeQtHb6mDi1LvZ03e\nEWxpvWwFfFVtCyBqWr5wn6IkY+ZFXfERLn2NCn6sMVxcFV12sUtuqD+jrW8MnTG7\nhofQqxmVVKKsZiXCvUSzfiKxDgoiRuD3MJSoZ0nQTHVmYxlFHuhTEETuTqSPmOXd\n/xJBVRi5WYCjt1aKRRZEz04zVEBVhVkr2H84qcVJHcfXFu4JM6dg0nmTjgd5cZUN\ncwA1KhK2/Qru9N0xlk9FGD2cvrVCCPWFPvZ1W7U7PBWOSBBH6GergA+dk2vQr7Ho\nlQIDAQAB\n-----END PUBLIC KEY-----",
 		  "n": "AMh-pGAj9vX2gwFDyrXot1f2YfHgh8h0Qx6w9IqLL4B7mmpCtQBR4w9faI7j4k0JvK_JxHkLR2-pg4tS72dN3hFsab1sBXxVbQsgalq-cJ-iJGPmRV3xES59jQp-rDFcXBVddrFLbqg_o61vDJ0xu4aH0KsZlVSirGYlwr1Es34isQ4KIkbg9zCUqGdJ0Ex1ZmMZRR7oUxBE7k6kj5jl3f8SQVUYuVmAo7dWikUWRM9OM1RAVYVZK9h_OKnFSR3H1xbuCTOnYNJ5k44HeXGVDXMANSoStv0K7vTdMZZPRRg9nL61Qgj1hT72dVu1OzwVjkgQR-hnq4APnZNr0K-x6JU"
 		}`
+		called = 0
+		s = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			called = called + 1
+			Expect(handler).NotTo(BeNil())
+			handler.ServeHTTP(w, req)
+		}))
+		c := &http.Client{Transport: http.DefaultTransport}
+		u, _ := url.Parse(s.URL)
+		a = &uaa.API{
+			TargetURL:             u,
+			AuthenticatedClient:   c,
+			UnauthenticatedClient: c,
+		}
 	})
 
-	AfterEach(func() {
-		server.Close()
+	it.After(func() {
+		if s != nil {
+			s.Close()
+		}
 	})
 
-	It("calls the /token_key endpoint", func() {
-		server.RouteToHandler("GET", "/token_key", ghttp.CombineHandlers(
-			ghttp.RespondWith(200, asymmetricKeyJSON),
-			ghttp.VerifyRequest("GET", "/token_key"),
-			ghttp.VerifyHeaderKV("Accept", "application/json"),
-		))
+	it("calls the /token_key endpoint", func() {
+		handler = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			Expect(req.Header.Get("Accept")).To(Equal("application/json"))
+			Expect(req.URL.Path).To(Equal("/token_key"))
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte(asymmetricKeyJSON))
+		})
 
-		key, _ := TokenKey(client, config)
+		key, _ := a.TokenKey()
 
-		Expect(server.ReceivedRequests()).To(HaveLen(1))
+		Expect(called).To(Equal(1))
 		Expect(key.Kty).To(Equal("RSA"))
 		Expect(key.E).To(Equal("AQAB"))
 		Expect(key.Use).To(Equal("sig"))
@@ -57,34 +77,32 @@ var _ = Describe("TokenKey", func() {
 		Expect(key.N).To(Equal("AMh-pGAj9vX2gwFDyrXot1f2YfHgh8h0Qx6w9IqLL4B7mmpCtQBR4w9faI7j4k0JvK_JxHkLR2-pg4tS72dN3hFsab1sBXxVbQsgalq-cJ-iJGPmRV3xES59jQp-rDFcXBVddrFLbqg_o61vDJ0xu4aH0KsZlVSirGYlwr1Es34isQ4KIkbg9zCUqGdJ0Ex1ZmMZRR7oUxBE7k6kj5jl3f8SQVUYuVmAo7dWikUWRM9OM1RAVYVZK9h_OKnFSR3H1xbuCTOnYNJ5k44HeXGVDXMANSoStv0K7vTdMZZPRRg9nL61Qgj1hT72dVu1OzwVjkgQR-hnq4APnZNr0K-x6JU"))
 	})
 
-	It("returns helpful error when /token_key request fails", func() {
-		server.RouteToHandler("GET", "/token_key", ghttp.CombineHandlers(
-			ghttp.VerifyRequest("GET", "/token_key"),
-			ghttp.RespondWith(500, "error response"),
-			ghttp.VerifyRequest("GET", "/token_key"),
-		))
+	it("returns helpful error when /token_key request fails", func() {
+		handler = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			Expect(req.Header.Get("Accept")).To(Equal("application/json"))
+			Expect(req.URL.Path).To(Equal("/token_key"))
+			w.WriteHeader(http.StatusInternalServerError)
+		})
 
-		_, err := TokenKey(client, config)
-
-		Expect(err).NotTo(BeNil())
+		_, err := a.TokenKey()
+		Expect(err).To(HaveOccurred())
 		Expect(err.Error()).To(ContainSubstring("An unknown error occurred while calling"))
 	})
 
-	It("returns helpful error when /token_key response can't be parsed", func() {
-		server.RouteToHandler("GET", "/token_key", ghttp.CombineHandlers(
-			ghttp.VerifyRequest("GET", "/token_key"),
-			ghttp.RespondWith(200, "{unparsable-json-response}"),
-			ghttp.VerifyRequest("GET", "/token_key"),
-		))
-
-		_, err := TokenKey(client, config)
-
-		Expect(err).NotTo(BeNil())
+	it("returns helpful error when /token_key response can't be parsed", func() {
+		handler = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			Expect(req.Header.Get("Accept")).To(Equal("application/json"))
+			Expect(req.URL.Path).To(Equal("/token_key"))
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte("{unparsable-json-response}"))
+		})
+		_, err := a.TokenKey()
+		Expect(err).To(HaveOccurred())
 		Expect(err.Error()).To(ContainSubstring("An unknown error occurred while parsing response from"))
 		Expect(err.Error()).To(ContainSubstring("Response was {unparsable-json-response}"))
 	})
 
-	It("can handle symmetric keys", func() {
+	it("can handle symmetric keys", func() {
 		symmetricKeyJSON := `{
 		  "kty" : "MAC",
 		  "alg" : "HS256",
@@ -92,20 +110,18 @@ var _ = Describe("TokenKey", func() {
 		  "use" : "sig",
 		  "kid" : "testKey"
 		}`
-
-		server.RouteToHandler("GET", "/token_key", ghttp.CombineHandlers(
-			ghttp.RespondWith(200, symmetricKeyJSON),
-			ghttp.VerifyRequest("GET", "/token_key"),
-			ghttp.VerifyHeaderKV("Accept", "application/json"),
-		))
-
-		key, _ := TokenKey(client, config)
-
-		Expect(server.ReceivedRequests()).To(HaveLen(1))
+		handler = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			Expect(req.Header.Get("Accept")).To(Equal("application/json"))
+			Expect(req.URL.Path).To(Equal("/token_key"))
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte(symmetricKeyJSON))
+		})
+		key, _ := a.TokenKey()
+		Expect(called).To(Equal(1))
 		Expect(key.Kty).To(Equal("MAC"))
 		Expect(key.Alg).To(Equal("HS256"))
 		Expect(key.Value).To(Equal("key"))
 		Expect(key.Use).To(Equal("sig"))
 		Expect(key.Kid).To(Equal("testKey"))
 	})
-})
+}

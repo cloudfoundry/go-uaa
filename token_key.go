@@ -1,7 +1,6 @@
 package uaa
 
 import (
-	"encoding/json"
 	"net/http"
 )
 
@@ -18,17 +17,13 @@ type JWK struct {
 
 // TokenKey retrieves a JWK from the token_key endpoint
 // (http://docs.cloudfoundry.org/api/uaa/version/4.14.0/index.html#token-key-s).
-func TokenKey(client *http.Client, config Config) (JWK, error) {
-	body, err := UnauthenticatedRequestor{}.Get(client, config, "token_key", "")
-	if err != nil {
-		return JWK{}, err
-	}
+func (a *API) TokenKey() (*JWK, error) {
+	url := urlWithPath(*a.TargetURL, "/token_key")
 
-	key := JWK{}
-	err = json.Unmarshal(body, &key)
+	key := &JWK{}
+	err := a.doJSON(http.MethodGet, &url, nil, key, false)
 	if err != nil {
-		return JWK{}, parseError("/token_key", body)
+		return nil, err
 	}
-
-	return key, nil
+	return key, err
 }

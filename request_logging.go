@@ -8,6 +8,13 @@ import (
 	"github.com/fatih/color"
 )
 
+func is2XX(status int) bool {
+	if status >= 200 && status < 300 {
+		return true
+	}
+	return false
+}
+
 func logResponse(response *http.Response) {
 	dumped, _ := httputil.DumpResponse(response, true)
 

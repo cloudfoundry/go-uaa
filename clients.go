@@ -1,24 +1,27 @@
 package uaa
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
 )
 
-const clientsResource string = "/oauth/clients"
+// ClientsEndpoint is the path to the clients resource.
+const ClientsEndpoint string = "/oauth/clients"
 
-// ClientManager allows you to interact with the Clients resource.
-type ClientManager struct {
-	HTTPClient *http.Client
-	Config     Config
+// paginatedClientList is the response from the API for a single page of clients.
+type paginatedClientList struct {
+	Page
+	Resources []Client `json:"resources"`
+	Schemas   []string `json:"schemas"`
 }
 
 // Client is a UAA client
 // http://docs.cloudfoundry.org/api/uaa/version/4.14.0/index.html#clients.
 type Client struct {
-	ClientID             string   `json:"client_id,omitempty"`
+	ClientID             string   `json:"client_id,omitempty" generator:"id"`
 	ClientSecret         string   `json:"client_secret,omitempty"`
 	Scope                []string `json:"scope,omitempty"`
 	ResourceIDs          []string `json:"resource_ids,omitempty"`
@@ -33,6 +36,18 @@ type Client struct {
 	AccessTokenValidity  int64    `json:"access_token_validity,omitempty"`
 	RefreshTokenValidity int64    `json:"refresh_token_validity,omitempty"`
 }
+
+// GrantType is a type of oauth2 grant.
+type GrantType string
+
+// Valid GrantType values.
+const (
+	REFRESHTOKEN      = GrantType("refresh_token")
+	AUTHCODE          = GrantType("authorization_code")
+	IMPLICIT          = GrantType("implicit")
+	PASSWORD          = GrantType("password")
+	CLIENTCREDENTIALS = GrantType("client_credentials")
+)
 
 func errorMissingValueForGrantType(value string, grantType GrantType) error {
 	return fmt.Errorf("%v must be specified for %v grant type", value, grantType)
@@ -107,132 +122,19 @@ type changeSecretBody struct {
 	ClientSecret string `json:"secret,omitempty"`
 }
 
-// PaginatedClientList is the response from the API for a single page of clients.
-type PaginatedClientList struct {
-	Resources    []Client `json:"resources"`
-	StartIndex   int      `json:"startIndex"`
-	ItemsPerPage int      `json:"itemsPerPage"`
-	TotalResults int      `json:"totalResults"`
-	Schemas      []string `json:"schemas"`
-}
-
-// Get the client with the given ID
-// http://docs.cloudfoundry.org/api/uaa/version/4.14.0/index.html#retrieve-3.
-func (cm *ClientManager) Get(id string) (Client, error) {
-	url := fmt.Sprintf("%s/%s", clientsResource, id)
-	bytes, err := AuthenticatedRequestor{}.Get(cm.HTTPClient, cm.Config, url, "")
-	if err != nil {
-		return Client{}, err
-	}
-
-	c := Client{}
-	err = json.Unmarshal(bytes, &c)
-	if err != nil {
-		return Client{}, parseError(url, bytes)
-	}
-
-	return c, err
-}
-
-// Delete the client with the given ID
-// http://docs.cloudfoundry.org/api/uaa/version/4.14.0/index.html#delete-6.
-func (cm *ClientManager) Delete(id string) (Client, error) {
-	url := fmt.Sprintf("%s/%s", clientsResource, id)
-	bytes, err := AuthenticatedRequestor{}.Delete(cm.HTTPClient, cm.Config, url, "")
-	if err != nil {
-		return Client{}, err
-	}
-
-	c := Client{}
-	err = json.Unmarshal(bytes, &c)
-	if err != nil {
-		return Client{}, parseError(url, bytes)
-	}
-
-	return c, err
-}
-
-// Create the given client
-// http://docs.cloudfoundry.org/api/uaa/version/4.14.0/index.html#create-6.
-func (cm *ClientManager) Create(client Client) (Client, error) {
-	bytes, err := AuthenticatedRequestor{}.PostJSON(cm.HTTPClient, cm.Config, clientsResource, "", client)
-	if err != nil {
-		return Client{}, err
-	}
-
-	c := Client{}
-	err = json.Unmarshal(bytes, &c)
-	if err != nil {
-		return Client{}, parseError(clientsResource, bytes)
-	}
-
-	return c, err
-}
-
-// Update the given client
-// http://docs.cloudfoundry.org/api/uaa/version/4.14.0/index.html#update-6.
-func (cm *ClientManager) Update(client Client) (Client, error) {
-	url := "/oauth/clients/" + client.ClientID
-	bytes, err := AuthenticatedRequestor{}.PutJSON(cm.HTTPClient, cm.Config, url, "", client)
-	if err != nil {
-		return Client{}, err
-	}
-
-	c := Client{}
-	err = json.Unmarshal(bytes, &c)
-	if err != nil {
-		return Client{}, parseError(url, bytes)
-	}
-
-	return c, err
-}
-
-// ChangeSecret updates the secret with the given value for the client
+// ChangeClientSecret updates the secret with the given value for the client
 // with the given id
 // http://docs.cloudfoundry.org/api/uaa/version/4.14.0/index.html#change-secret.
-func (cm *ClientManager) ChangeSecret(id string, newSecret string) error {
-	url := "/oauth/clients/" + id + "/secret"
-	body := changeSecretBody{ClientID: id, ClientSecret: newSecret}
-	_, err := AuthenticatedRequestor{}.PutJSON(cm.HTTPClient, cm.Config, url, "", body)
-	return err
-}
-
-func getClientPage(cm *ClientManager, startIndex, count int) (PaginatedClientList, error) {
-	query := fmt.Sprintf("startIndex=%v&count=%v", startIndex, count)
-	if startIndex == 0 {
-		query = ""
-	}
-
-	bytes, err := AuthenticatedRequestor{}.Get(cm.HTTPClient, cm.Config, "/oauth/clients", query)
+func (a *API) ChangeClientSecret(id string, newSecret string) error {
+	u := urlWithPath(*a.TargetURL, fmt.Sprintf("%s/%s/secret", ClientsEndpoint, id))
+	change := &changeSecretBody{ClientID: id, ClientSecret: newSecret}
+	j, err := json.Marshal(change)
 	if err != nil {
-		return PaginatedClientList{}, err
+		return err
 	}
-
-	clientList := PaginatedClientList{}
-	err = json.Unmarshal(bytes, &clientList)
+	err = a.doJSON(http.MethodPut, &u, bytes.NewBuffer([]byte(j)), nil, true)
 	if err != nil {
-		return PaginatedClientList{}, parseError("/oauth/clients", bytes)
+		return err
 	}
-	return clientList, nil
-}
-
-// List all clients.
-func (cm *ClientManager) List() ([]Client, error) {
-	results, err := getClientPage(cm, 0, 0)
-	if err != nil {
-		return []Client{}, err
-	}
-
-	clientList := results.Resources
-	startIndex, count := results.StartIndex, results.ItemsPerPage
-	for results.TotalResults > len(clientList) {
-		startIndex += count
-		newResults, err := getClientPage(cm, startIndex, count)
-		if err != nil {
-			return []Client{}, err
-		}
-		clientList = append(clientList, newResults.Resources...)
-	}
-
-	return clientList, nil
+	return nil
 }

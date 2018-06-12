@@ -15,6 +15,69 @@ import (
 	"github.com/sclevine/spec/report"
 )
 
+const userResponse string = `{
+	  "id" : "00000000-0000-0000-0000-000000000001",
+	  "externalID" : "marcus-user",
+	  "meta" : {
+		"version" : 1,
+		"created" : "2017-01-15T16:54:15.677Z",
+		"lastModified" : "2017-08-15T16:54:15.677Z"
+	  },
+	  "userName" : "marcus@stoicism.com",
+	  "name" : {
+		"familyName" : "Aurelius",
+		"givenName" : "Marcus"
+	  },
+	  "emails" : [ {
+		"value" : "marcus@stoicism.com",
+		"primary" : false
+	  } ],
+	  "groups" : [ {
+		"value" : "ac2ab20e-0a2d-4b68-82e4-817ee6b258b4",
+		"display" : "philosophy.read",
+		"type" : "DIRECT"
+	  }, {
+		"value" : "110b2434-4a30-439b-b5fc-f4cf47fc04f0",
+		"display" : "philosophy.write",
+		"type" : "DIRECT"
+	  }],
+	  "approvals" : [ {
+		"userID" : "fb5f32e1-5cb3-49e6-93df-6df9c8c8bd70",
+		"clientID" : "shinyclient",
+		"scope" : "philosophy.read",
+		"status" : "APPROVED",
+		"lastUpdatedAt" : "2017-08-15T16:54:15.765Z",
+		"expiresAt" : "2017-08-15T16:54:25.765Z"
+	  }, {
+		"userID" : "fb5f32e1-5cb3-49e6-93df-6df9c8c8bd70",
+		"clientID" : "identity",
+		"scope" : "uaa.user",
+		"status" : "APPROVED",
+		"lastUpdatedAt" : "2017-08-15T16:54:45.767Z",
+		"expiresAt" : "2017-08-15T16:54:45.767Z"
+	  } ],
+	  "phoneNumbers" : [ {
+		"value" : "5555555555"
+	  } ],
+	  "active" : true,
+	  "verified" : true,
+	  "origin" : "uaa",
+	  "zoneID" : "uaa",
+	  "passwordLastModified" : "2017-08-15T16:54:15.000Z",
+	  "previousLogonTime" : 1502816055768,
+	  "lastLogonTime" : 1502816055768,
+	  "schemas" : [ "urn:scim:schemas:core:1.0" ]
+	}`
+
+var userListResponse = fmt.Sprintf(PaginatedResponseTmpl, MarcusUserResponse, DrSeussUserResponse)
+var testUserValue uaa.User = uaa.User{
+	Username: "marcus@stoicism.com",
+	Active:   newTrueP(),
+	Name:     &uaa.UserName{GivenName: "Marcus", FamilyName: "Aurelius"},
+}
+
+var testUserJSON string = `{ "userName": "marcus@stoicism.com", "active": true, "name" : { "familyName" : "Aurelius", "givenName" : "Marcus" }}`
+
 func newTrueP() *bool {
 	b := true
 	return &b
@@ -58,90 +121,6 @@ func testUsers(t *testing.T, when spec.G, it spec.S) {
 		if s != nil {
 			s.Close()
 		}
-	})
-
-	when("GetUser()", func() {
-		when("the user is returned from the server", func() {
-			it.Before(func() {
-				handler = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-					Expect(req.Header.Get("Accept")).To(Equal("application/json"))
-					Expect(req.URL.Path).To(Equal("/Users/fb5f32e1-5cb3-49e6-93df-6df9c8c8bd70"))
-					w.WriteHeader(http.StatusOK)
-					w.Write([]byte(MarcusUserResponse))
-				})
-			})
-			it("gets the user from the UAA by ID", func() {
-				user, err := a.GetUser("fb5f32e1-5cb3-49e6-93df-6df9c8c8bd70")
-				Expect(err).NotTo(HaveOccurred())
-				Expect(user.ID).To(Equal("fb5f32e1-5cb3-49e6-93df-6df9c8c8bd70"))
-				Expect(user.ExternalID).To(Equal("marcus-user"))
-				Expect(user.Meta.Created).To(Equal("2017-01-15T16:54:15.677Z"))
-				Expect(user.Meta.LastModified).To(Equal("2017-08-15T16:54:15.677Z"))
-				Expect(user.Meta.Version).To(Equal(1))
-				Expect(user.Username).To(Equal("marcus@stoicism.com"))
-				Expect(user.Name.GivenName).To(Equal("Marcus"))
-				Expect(user.Name.FamilyName).To(Equal("Aurelius"))
-				Expect(*user.Emails[0].Primary).To(Equal(false))
-				Expect(user.Emails[0].Value).To(Equal("marcus@stoicism.com"))
-				Expect(user.Groups[0].Display).To(Equal("philosophy.read"))
-				Expect(user.Groups[0].Type).To(Equal("DIRECT"))
-				Expect(user.Groups[0].Value).To(Equal("ac2ab20e-0a2d-4b68-82e4-817ee6b258b4"))
-				Expect(user.Groups[1].Display).To(Equal("philosophy.write"))
-				Expect(user.Groups[1].Type).To(Equal("DIRECT"))
-				Expect(user.Groups[1].Value).To(Equal("110b2434-4a30-439b-b5fc-f4cf47fc04f0"))
-				Expect(user.Approvals[0].UserID).To(Equal("fb5f32e1-5cb3-49e6-93df-6df9c8c8bd70"))
-				Expect(user.Approvals[0].ClientID).To(Equal("shinyclient"))
-				Expect(user.Approvals[0].ExpiresAt).To(Equal("2017-08-15T16:54:25.765Z"))
-				Expect(user.Approvals[0].LastUpdatedAt).To(Equal("2017-08-15T16:54:15.765Z"))
-				Expect(user.Approvals[0].Scope).To(Equal("philosophy.read"))
-				Expect(user.Approvals[0].Status).To(Equal("APPROVED"))
-				Expect(user.PhoneNumbers[0].Value).To(Equal("5555555555"))
-				Expect(*user.Active).To(Equal(true))
-				Expect(*user.Verified).To(Equal(true))
-				Expect(user.Origin).To(Equal("uaa"))
-				Expect(user.ZoneID).To(Equal("uaa"))
-				Expect(user.PasswordLastModified).To(Equal("2017-08-15T16:54:15.000Z"))
-				Expect(user.PreviousLogonTime).To(Equal(1502816055768))
-				Expect(user.LastLogonTime).To(Equal(1502816055768))
-				Expect(user.Schemas[0]).To(Equal("urn:scim:schemas:core:1.0"))
-			})
-		})
-
-		when("the server errors", func() {
-			it.Before(func() {
-				handler = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-					Expect(req.Header.Get("Accept")).To(Equal("application/json"))
-					Expect(req.URL.Path).To(Equal("/Users/fb5f32e1-5cb3-49e6-93df-6df9c8c8bd7"))
-					w.WriteHeader(http.StatusInternalServerError)
-				})
-			})
-
-			it("returns helpful error", func() {
-				user, err := a.GetUser("fb5f32e1-5cb3-49e6-93df-6df9c8c8bd7")
-				Expect(err).To(HaveOccurred())
-				Expect(user).To(BeNil())
-				Expect(err.Error()).To(ContainSubstring("An unknown error occurred while calling"))
-			})
-		})
-
-		when("the server returns unparsable users", func() {
-			it.Before(func() {
-				handler = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-					Expect(req.Header.Get("Accept")).To(Equal("application/json"))
-					Expect(req.URL.Path).To(Equal("/Users/fb5f32e1-5cb3-49e6-93df-6df9c8c8bd7"))
-					w.WriteHeader(http.StatusOK)
-					w.Write([]byte("{unparsable-json-response}"))
-				})
-			})
-
-			it("returns helpful error", func() {
-				user, err := a.GetUser("fb5f32e1-5cb3-49e6-93df-6df9c8c8bd7")
-				Expect(err).To(HaveOccurred())
-				Expect(user).To(BeNil())
-				Expect(err.Error()).To(ContainSubstring("An unknown error occurred while parsing response from"))
-				Expect(err.Error()).To(ContainSubstring("Response was {unparsable-json-response}"))
-			})
-		})
 	})
 
 	when("GetUserByUsername()", func() {
@@ -449,162 +428,6 @@ func testUsers(t *testing.T, when spec.G, it spec.S) {
 			userList, _, err := a.ListUsers(`id eq "fb5f32e1-5cb3-49e6-93df-6df9c8c8bd7"`, "", "", "", 1, 100)
 			Expect(err).To(HaveOccurred())
 			Expect(userList).To(BeNil())
-		})
-	})
-
-	when("CreateUser()", func() {
-		var (
-			u uaa.User
-		)
-		it.Before(func() {
-			u = uaa.User{
-				Username: "marcus@stoicism.com",
-				Active:   newTrueP(),
-			}
-			u.Name = &uaa.UserName{GivenName: "Marcus", FamilyName: "Aurelius"}
-		})
-
-		it("performs a POST with the user data and returns the created user", func() {
-			handler = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-				Expect(req.Header.Get("Accept")).To(Equal("application/json"))
-				Expect(req.Header.Get("Content-Type")).To(Equal("application/json"))
-				Expect(req.Method).To(Equal(http.MethodPost))
-				Expect(req.URL.Path).To(Equal("/Users"))
-				defer req.Body.Close()
-				body, _ := ioutil.ReadAll(req.Body)
-				Expect(body).To(MatchJSON(`{ "userName": "marcus@stoicism.com", "active": true, "name" : { "familyName" : "Aurelius", "givenName" : "Marcus" }}`))
-				w.WriteHeader(http.StatusCreated)
-				w.Write([]byte(MarcusUserResponse))
-			})
-
-			created, err := a.CreateUser(u)
-			Expect(called).To(Equal(1))
-			Expect(err).NotTo(HaveOccurred())
-			Expect(created).NotTo(BeNil())
-			Expect(created.Username).To(Equal("marcus@stoicism.com"))
-			Expect(created.ExternalID).To(Equal("marcus-user"))
-		})
-
-		it("returns error when response cannot be parsed", func() {
-			handler = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-				Expect(req.Method).To(Equal(http.MethodPost))
-				Expect(req.URL.Path).To(Equal("/Users"))
-				w.WriteHeader(http.StatusOK)
-				w.Write([]byte("{unparseable}"))
-			})
-			created, err := a.CreateUser(u)
-			Expect(err).To(HaveOccurred())
-			Expect(created).To(BeNil())
-		})
-
-		it("returns error when response is not 200 OK", func() {
-			handler = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-				Expect(req.Method).To(Equal(http.MethodPost))
-				Expect(req.URL.Path).To(Equal("/Users"))
-				w.WriteHeader(http.StatusBadRequest)
-			})
-			created, err := a.CreateUser(u)
-			Expect(err).To(HaveOccurred())
-			Expect(created).To(BeNil())
-		})
-	})
-
-	when("UpdateUser()", func() {
-		var (
-			u uaa.User
-		)
-		it.Before(func() {
-			u = uaa.User{
-				Username: "marcus@stoicism.com",
-				Active:   newTrueP(),
-			}
-			u.Name = &uaa.UserName{GivenName: "Marcus", FamilyName: "Aurelius"}
-		})
-
-		it("performs a PUT with the user data and returns the updated user", func() {
-			handler = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-				Expect(req.Header.Get("Accept")).To(Equal("application/json"))
-				Expect(req.Header.Get("Content-Type")).To(Equal("application/json"))
-				Expect(req.Method).To(Equal(http.MethodPut))
-				Expect(req.URL.Path).To(Equal("/Users"))
-				defer req.Body.Close()
-				body, _ := ioutil.ReadAll(req.Body)
-				Expect(body).To(MatchJSON(body))
-				w.WriteHeader(http.StatusOK)
-				w.Write([]byte(MarcusUserResponse))
-			})
-
-			updated, err := a.UpdateUser(u)
-			Expect(called).To(Equal(1))
-			Expect(err).NotTo(HaveOccurred())
-			Expect(updated).NotTo(BeNil())
-			Expect(updated.Username).To(Equal("marcus@stoicism.com"))
-			Expect(updated.ExternalID).To(Equal("marcus-user"))
-		})
-
-		it("returns error when response cannot be parsed", func() {
-			handler = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-				Expect(req.Method).To(Equal(http.MethodPut))
-				Expect(req.URL.Path).To(Equal("/Users"))
-				w.WriteHeader(http.StatusOK)
-				w.Write([]byte("{unparseable}"))
-			})
-			updated, err := a.UpdateUser(u)
-			Expect(err).To(HaveOccurred())
-			Expect(updated).To(BeNil())
-		})
-
-		it("returns error when response is not 200 OK", func() {
-			handler = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-				Expect(req.Method).To(Equal(http.MethodPut))
-				Expect(req.URL.Path).To(Equal("/Users"))
-				w.WriteHeader(http.StatusBadRequest)
-			})
-			updated, err := a.UpdateUser(u)
-			Expect(err).To(HaveOccurred())
-			Expect(updated).To(BeNil())
-		})
-	})
-
-	when("DeleteUser()", func() {
-		it("performs DELETE with user data and bearer token", func() {
-			handler = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-				Expect(req.Header.Get("Accept")).To(Equal("application/json"))
-				Expect(req.Method).To(Equal(http.MethodDelete))
-				Expect(req.URL.Path).To(Equal("/Users/fb5f32e1-5cb3-49e6-93df-6df9c8c8bd70"))
-				w.WriteHeader(http.StatusOK)
-				w.Write([]byte(MarcusUserResponse))
-			})
-
-			deleted, err := a.DeleteUser("fb5f32e1-5cb3-49e6-93df-6df9c8c8bd70")
-			Expect(called).To(Equal(1))
-			Expect(err).NotTo(HaveOccurred())
-			Expect(deleted).NotTo(BeNil())
-			Expect(deleted.Username).To(Equal("marcus@stoicism.com"))
-			Expect(deleted.ExternalID).To(Equal("marcus-user"))
-		})
-
-		it("returns error when response cannot be parsed", func() {
-			handler = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-				Expect(req.Method).To(Equal(http.MethodDelete))
-				Expect(req.URL.Path).To(Equal("/Users/fb5f32e1-5cb3-49e6-93df-6df9c8c8bd70"))
-				w.WriteHeader(http.StatusOK)
-				w.Write([]byte("{unparseable}"))
-			})
-			deleted, err := a.DeleteUser("fb5f32e1-5cb3-49e6-93df-6df9c8c8bd70")
-			Expect(err).To(HaveOccurred())
-			Expect(deleted).To(BeNil())
-		})
-
-		it("returns error when response is not 200 OK", func() {
-			handler = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-				Expect(req.Method).To(Equal(http.MethodDelete))
-				Expect(req.URL.Path).To(Equal("/Users/fb5f32e1-5cb3-49e6-93df-6df9c8c8bd70"))
-				w.WriteHeader(http.StatusBadRequest)
-			})
-			deleted, err := a.DeleteUser("fb5f32e1-5cb3-49e6-93df-6df9c8c8bd70")
-			Expect(err).To(HaveOccurred())
-			Expect(deleted).To(BeNil())
 		})
 	})
 

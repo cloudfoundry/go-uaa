@@ -1,42 +1,72 @@
 package uaa_test
 
 import (
-	. "github.com/cloudfoundry-community/go-uaa"
-	. "github.com/onsi/ginkgo"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
+	"testing"
+
+	uaa "github.com/cloudfoundry-community/go-uaa"
 	. "github.com/onsi/gomega"
-	"github.com/onsi/gomega/ghttp"
+	"github.com/sclevine/spec"
+	"github.com/sclevine/spec/report"
 )
 
-var _ = Describe("Health", func() {
+func TestIsHealthy(t *testing.T) {
+	spec.Run(t, "IsHealthy", testIsHealthy, spec.Report(report.Terminal{}))
+}
+
+func testIsHealthy(t *testing.T, when spec.G, it spec.S) {
 	var (
-		server *ghttp.Server
-		config Config
+		s       *httptest.Server
+		handler http.Handler
+		called  int
+		a       *uaa.API
 	)
 
-	BeforeEach(func() {
-		server = ghttp.NewServer()
-		config = NewConfigWithServerURL(server.URL())
+	it.Before(func() {
+		RegisterTestingT(t)
+		called = 0
+		s = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			called = called + 1
+			Expect(handler).NotTo(BeNil())
+			handler.ServeHTTP(w, req)
+		}))
+		c := &http.Client{Transport: http.DefaultTransport}
+		u, _ := url.Parse(s.URL)
+		a = &uaa.API{
+			TargetURL:             u,
+			AuthenticatedClient:   c,
+			UnauthenticatedClient: c,
+		}
 	})
 
-	AfterEach(func() {
-		server.Close()
+	it.After(func() {
+		if s != nil {
+			s.Close()
+		}
 	})
 
-	It("calls the /healthz endpoint", func() {
-		server.RouteToHandler("GET", "/healthz", ghttp.RespondWith(200, "ok"))
-		server.AppendHandlers(ghttp.VerifyRequest("GET", "/healthz"))
+	it("is healthy when a 200 response is received", func() {
+		handler = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			Expect(req.URL.Path).To(Equal("/healthz"))
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte("ok"))
+		})
 
-		status, _ := Health(config.GetActiveTarget())
-
-		Expect(status).To(Equal(OK))
+		status, err := a.IsHealthy()
+		Expect(status).To(BeTrue())
+		Expect(err).NotTo(HaveOccurred())
 	})
 
-	It("returns error status when non-200 response", func() {
-		server.RouteToHandler("GET", "/healthz", ghttp.RespondWith(400, "ok"))
-		server.AppendHandlers(ghttp.VerifyRequest("GET", "/healthz"))
-
-		status, _ := Health(config.GetActiveTarget())
-
-		Expect(status).To(Equal(ERROR))
+	it("is unhealthy when a non-200 response is received", func() {
+		handler = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			Expect(req.URL.Path).To(Equal("/healthz"))
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte("ok"))
+		})
+		status, err := a.IsHealthy()
+		Expect(status).To(BeFalse())
+		Expect(err).NotTo(HaveOccurred())
 	})
-})
+}
