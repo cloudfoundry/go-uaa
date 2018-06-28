@@ -10,7 +10,7 @@ import (
 	"golang.org/x/oauth2/clientcredentials"
 )
 
-//go:generate go run generator.go
+//go:generate go run ./generator/generator.go
 
 // API is a client to the UAA API.
 type API struct {

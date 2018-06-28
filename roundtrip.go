@@ -34,7 +34,7 @@ func (a *API) doJSONWithHeaders(method string, url *url.URL, headers map[string]
 
 	if response != nil {
 		if err := json.Unmarshal(bytes, response); err != nil {
-			return parseError(url.String(), bytes)
+			return parseError(err, url.String(), bytes)
 		}
 	}
 
