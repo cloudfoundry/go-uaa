@@ -116,6 +116,14 @@ func (a *API) ensureTransport(c *http.Client) {
 			b.TLSClientConfig = &tls.Config{}
 		}
 		b.TLSClientConfig.InsecureSkipVerify = a.SkipSSLValidation
+	case *tokenTransport:
+		if t.underlyingTransport.TLSClientConfig == nil && !a.SkipSSLValidation {
+			return
+		}
+		if t.underlyingTransport.TLSClientConfig == nil {
+			t.underlyingTransport.TLSClientConfig = &tls.Config{}
+		}
+		t.underlyingTransport.TLSClientConfig.InsecureSkipVerify = a.SkipSSLValidation
 	case *http.Transport:
 		if t.TLSClientConfig == nil && !a.SkipSSLValidation {
 			return

@@ -1,8 +1,10 @@
 package uaa
 
 import (
+	"net"
 	"net/http"
 	"testing"
+	"time"
 
 	. "github.com/onsi/gomega"
 	"github.com/sclevine/spec"
@@ -71,6 +73,54 @@ func testEnsureTransport(t *testing.T, when spec.G, it spec.S) {
 				t := a.UnauthenticatedClient.Transport.(*http.Transport)
 				Expect(t.TLSClientConfig).NotTo(BeNil())
 				Expect(t.TLSClientConfig.InsecureSkipVerify).To(BeTrue())
+			})
+		})
+	})
+
+	when("the client transport is a tokenTransport", func() {
+		it.Before(func() {
+			a.UnauthenticatedClient = &http.Client{Transport: &tokenTransport{
+				underlyingTransport: &http.Transport{
+					Proxy: http.ProxyFromEnvironment,
+					DialContext: (&net.Dialer{
+						Timeout:   30 * time.Second,
+						KeepAlive: 30 * time.Second,
+						DualStack: true,
+					}).DialContext,
+					MaxIdleConns:          100,
+					IdleConnTimeout:       90 * time.Second,
+					TLSHandshakeTimeout:   10 * time.Second,
+					ExpectContinueTimeout: 1 * time.Second,
+				},
+			}}
+		})
+
+		when("SkipSSLValidation is false", func() {
+			it.Before(func() {
+				a.SkipSSLValidation = false
+			})
+
+			it("will not initialize the TLS client config", func() {
+				a.ensureTransport(a.UnauthenticatedClient)
+				Expect(a.UnauthenticatedClient).NotTo(BeNil())
+				Expect(a.UnauthenticatedClient.Transport).NotTo(BeNil())
+				t := a.UnauthenticatedClient.Transport.(*tokenTransport)
+				Expect(t.underlyingTransport.TLSClientConfig).To(BeNil())
+			})
+		})
+
+		when("SkipSSLValidation is true", func() {
+			it.Before(func() {
+				a.SkipSSLValidation = true
+			})
+
+			it("will initialize the TLS client config and set InsecureSkipVerify", func() {
+				a.ensureTransport(a.UnauthenticatedClient)
+				Expect(a.UnauthenticatedClient).NotTo(BeNil())
+				Expect(a.UnauthenticatedClient.Transport).NotTo(BeNil())
+				t := a.UnauthenticatedClient.Transport.(*tokenTransport)
+				Expect(t.underlyingTransport.TLSClientConfig).NotTo(BeNil())
+				Expect(t.underlyingTransport.TLSClientConfig.InsecureSkipVerify).To(BeTrue())
 			})
 		})
 	})

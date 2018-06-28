@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"testing"
 	"time"
 
@@ -42,6 +43,54 @@ func TestNew(t *testing.T) {
 func testNew(t *testing.T, when spec.G, it spec.S) {
 	it.Before(func() {
 		RegisterTestingT(t)
+	})
+
+	when("NewWithToken()", func() {
+		it("fails if the target url is invalid", func() {
+			api, err := uaa.NewWithToken("(*#&^@%$&%)", "", oauth2.Token{Expiry: time.Now().Add(10 * time.Second), AccessToken: "test-token"})
+			Expect(err).To(HaveOccurred())
+			Expect(api).To(BeNil())
+		})
+
+		it("fails if the token is invalid", func() {
+			api, err := uaa.NewWithToken("https://example.net", "", oauth2.Token{Expiry: time.Now().Add(10 * time.Second), AccessToken: ""})
+			Expect(err).To(HaveOccurred())
+			Expect(api).To(BeNil())
+			api, err = uaa.NewWithToken("https://example.net", "", oauth2.Token{Expiry: time.Now().Add(-10 * time.Second), AccessToken: "test-token"})
+			Expect(err).To(HaveOccurred())
+			Expect(api).To(BeNil())
+		})
+
+		it("returns an API with a TargetURL", func() {
+			api, err := uaa.NewWithToken("https://example.net", "", oauth2.Token{Expiry: time.Now().Add(10 * time.Second), AccessToken: "test-token"})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(api).NotTo(BeNil())
+			Expect(api.TargetURL.String()).To(Equal("https://example.net"))
+		})
+
+		it("returns an API with an HTTPClient", func() {
+			api, err := uaa.NewWithToken("https://example.net", "", oauth2.Token{Expiry: time.Now().Add(10 * time.Second), AccessToken: "test-token"})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(api).NotTo(BeNil())
+			Expect(api.UnauthenticatedClient).NotTo(BeNil())
+			Expect(api.AuthenticatedClient).NotTo(BeNil())
+			Expect(reflect.TypeOf(api.AuthenticatedClient.Transport).String()).To(Equal("*uaa.tokenTransport"))
+		})
+
+		it("sets the authorization header correctly when round tripping", func() {
+			s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+				Expect(req.Header.Get("Authorization")).To(Equal("Bearer test-token"))
+				w.WriteHeader(http.StatusOK)
+			}))
+			api, err := uaa.NewWithToken("https://example.net", "", oauth2.Token{Expiry: time.Now().Add(10 * time.Second), AccessToken: "test-token"})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(api).NotTo(BeNil())
+			Expect(api.UnauthenticatedClient).NotTo(BeNil())
+			Expect(api.AuthenticatedClient).NotTo(BeNil())
+			r, err := api.AuthenticatedClient.Get(s.URL)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(r.StatusCode).To(Equal(http.StatusOK))
+		})
 	})
 
 	when("NewWithClientCredentials()", func() {
