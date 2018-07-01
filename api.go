@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"net"
 	"net/http"
 	"net/url"
@@ -53,7 +52,6 @@ type tokenTransport struct {
 
 func (t *tokenTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	req.Header.Set("Authorization", fmt.Sprintf("%s %s", t.token.Type(), t.token.AccessToken))
-	log.Println(req.Header.Get("Authorization"))
 	return t.underlyingTransport.RoundTrip(req)
 }
 
