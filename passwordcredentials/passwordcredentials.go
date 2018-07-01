@@ -34,10 +34,7 @@ func tokenFromInternal(t *internalToken) *oauth2.Token {
 }
 
 func retrieveToken(ctx context.Context, ClientID, ClientSecret, TokenURL string, v url.Values) (*oauth2.Token, error) {
-	hc, err := ContextClient(ctx)
-	if err != nil {
-		return nil, err
-	}
+	hc := ContextClient(ctx)
 	v.Set("client_id", ClientID)
 	req, err := http.NewRequest("POST", TokenURL, strings.NewReader(v.Encode()))
 	if err != nil {
@@ -114,8 +111,13 @@ func retrieveToken(ctx context.Context, ClientID, ClientSecret, TokenURL string,
 	return tk.WithExtra(token.Raw), nil
 }
 
-func ContextClient(ctx context.Context) (*http.Client, error) {
-	return http.DefaultClient, nil
+func ContextClient(ctx context.Context) *http.Client {
+	if ctx != nil {
+		if hc, ok := ctx.Value(oauth2.HTTPClient).(*http.Client); ok {
+			return hc
+		}
+	}
+	return http.DefaultClient
 }
 
 // Token represents the crendentials used to authorize
