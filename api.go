@@ -93,9 +93,21 @@ func NewWithToken(target string, zoneID string, token oauth2.Token) (*API, error
 	}, nil
 }
 
+// ClientCredentials holds the API client to communicate with UAA using client credentials
+type ClientCredentials struct {
+	API    *API
+	Config *clientcredentials.Config
+}
+
+// Token uses client credentials to retrieve a token.
+func (cc *ClientCredentials) Token() (*oauth2.Token, error) {
+	ctx := context.WithValue(context.Background(), oauth2.HTTPClient, cc.API.UnauthenticatedClient)
+	return cc.Config.TokenSource(ctx).Token()
+}
+
 // NewWithClientCredentials builds an API that uses the client credentials grant
 // to get a token for use with the UAA API.
-func NewWithClientCredentials(target string, zoneID string, clientID string, clientSecret string, tokenFormat TokenFormat) (*API, error) {
+func NewWithClientCredentials(target string, zoneID string, clientID string, clientSecret string, tokenFormat TokenFormat) (*ClientCredentials, error) {
 	u, err := BuildTargetURL(target)
 	if err != nil {
 		return nil, err
@@ -111,17 +123,32 @@ func NewWithClientCredentials(target string, zoneID string, clientID string, cli
 		EndpointParams: v,
 	}
 	client := &http.Client{Transport: http.DefaultTransport}
-	return &API{
-		UnauthenticatedClient: client,
-		AuthenticatedClient:   c.Client(context.WithValue(context.Background(), oauth2.HTTPClient, client)),
-		TargetURL:             u,
-		ZoneID:                zoneID,
+	return &ClientCredentials{
+		Config: c,
+		API: &API{
+			UnauthenticatedClient: client,
+			AuthenticatedClient:   c.Client(context.WithValue(context.Background(), oauth2.HTTPClient, client)),
+			TargetURL:             u,
+			ZoneID:                zoneID,
+		},
 	}, nil
+}
+
+// PasswordCredentials holds the API client to communicate with UAA using password credentials
+type PasswordCredentials struct {
+	API    *API
+	Config *passwordcredentials.Config
+}
+
+// Token uses password credentials to retrieve a token.
+func (pc *PasswordCredentials) Token() (*oauth2.Token, error) {
+	ctx := context.WithValue(context.Background(), oauth2.HTTPClient, pc.API.UnauthenticatedClient)
+	return pc.Config.TokenSource(ctx).Token()
 }
 
 // NewWithPasswordCredentials builds an API that uses the password credentials
 // grant to get a token for use with the UAA API.
-func NewWithPasswordCredentials(target string, zoneID string, clientID string, clientSecret string, username string, password string, tokenFormat TokenFormat) (*API, error) {
+func NewWithPasswordCredentials(target string, zoneID string, clientID string, clientSecret string, username string, password string, tokenFormat TokenFormat) (*PasswordCredentials, error) {
 	u, err := BuildTargetURL(target)
 	if err != nil {
 		return nil, err
@@ -141,11 +168,14 @@ func NewWithPasswordCredentials(target string, zoneID string, clientID string, c
 		EndpointParams: v,
 	}
 	client := &http.Client{Transport: http.DefaultTransport}
-	return &API{
-		UnauthenticatedClient: client,
-		AuthenticatedClient:   c.Client(context.WithValue(context.Background(), oauth2.HTTPClient, client)),
-		TargetURL:             u,
-		ZoneID:                zoneID,
+	return &PasswordCredentials{
+		Config: c,
+		API: &API{
+			UnauthenticatedClient: client,
+			AuthenticatedClient:   c.Client(context.WithValue(context.Background(), oauth2.HTTPClient, client)),
+			TargetURL:             u,
+			ZoneID:                zoneID,
+		},
 	}, nil
 }
 

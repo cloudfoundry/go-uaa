@@ -95,45 +95,55 @@ func testNew(t *testing.T, when spec.G, it spec.S) {
 
 	when("NewWithClientCredentials()", func() {
 		it("fails if the target url is invalid", func() {
-			api, err := uaa.NewWithClientCredentials("(*#&^@%$&%)", "", "", "", uaa.OpaqueToken)
+			creds, err := uaa.NewWithClientCredentials("(*#&^@%$&%)", "", "", "", uaa.OpaqueToken)
 			Expect(err).To(HaveOccurred())
-			Expect(api).To(BeNil())
+			Expect(creds).To(BeNil())
 		})
 
 		it("returns an API with a TargetURL", func() {
-			api, err := uaa.NewWithClientCredentials("https://example.net", "", "", "", uaa.OpaqueToken)
+			creds, err := uaa.NewWithClientCredentials("https://example.net", "", "", "", uaa.OpaqueToken)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(api).NotTo(BeNil())
-			Expect(api.TargetURL.String()).To(Equal("https://example.net"))
+			Expect(creds).NotTo(BeNil())
+			Expect(creds.API.TargetURL.String()).To(Equal("https://example.net"))
 		})
 
 		it("returns an API with an HTTPClient", func() {
-			api, err := uaa.NewWithClientCredentials("https://example.net", "", "", "", uaa.OpaqueToken)
+			creds, err := uaa.NewWithClientCredentials("https://example.net", "", "", "", uaa.OpaqueToken)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(api).NotTo(BeNil())
-			Expect(api.AuthenticatedClient).NotTo(BeNil())
+			Expect(creds).NotTo(BeNil())
+			Expect(creds.API.AuthenticatedClient).NotTo(BeNil())
 		})
+
+		// it("allows access to AccessToken", func() {
+		// 	creds, err := uaa.NewWithClientCredentials("https://example.net", "", "", "", uaa.OpaqueToken)
+		// 	Expect(err).NotTo(HaveOccurred())
+		// 	token, err := creds.Token()
+		// 	Expect(err).NotTo(HaveOccurred())
+		// 	Expect(token).NotTo(BeNil())
+		// 	Expect(token.RefreshToken).NotTo(BeNil())
+		// 	Expect(token.TokenType).To(Equal("bearer"))
+		// })
 	})
 
 	when("NewWithPasswordCredentials()", func() {
 		it("fails if the target url is invalid", func() {
-			api, err := uaa.NewWithPasswordCredentials("(*#&^@%$&%)", "", "", "", "", "", uaa.OpaqueToken)
+			creds, err := uaa.NewWithPasswordCredentials("(*#&^@%$&%)", "", "", "", "", "", uaa.OpaqueToken)
 			Expect(err).To(HaveOccurred())
-			Expect(api).To(BeNil())
+			Expect(creds).To(BeNil())
 		})
 
 		it("returns an API with a TargetURL", func() {
-			api, err := uaa.NewWithPasswordCredentials("https://example.net", "", "", "", "", "", uaa.OpaqueToken)
+			creds, err := uaa.NewWithPasswordCredentials("https://example.net", "", "", "", "", "", uaa.OpaqueToken)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(api).NotTo(BeNil())
-			Expect(api.TargetURL.String()).To(Equal("https://example.net"))
+			Expect(creds).NotTo(BeNil())
+			Expect(creds.API.TargetURL.String()).To(Equal("https://example.net"))
 		})
 
 		it("returns an API with an HTTPClient", func() {
-			api, err := uaa.NewWithPasswordCredentials("https://example.net", "", "", "", "", "", uaa.OpaqueToken)
+			creds, err := uaa.NewWithPasswordCredentials("https://example.net", "", "", "", "", "", uaa.OpaqueToken)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(api).NotTo(BeNil())
-			Expect(api.AuthenticatedClient).NotTo(BeNil())
+			Expect(creds).NotTo(BeNil())
+			Expect(creds.API.AuthenticatedClient).NotTo(BeNil())
 		})
 	})
 
