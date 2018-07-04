@@ -146,7 +146,9 @@ func testNew(t *testing.T, when spec.G, it spec.S) {
 		it.Before(func() {
 			returnToken = true
 			s = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+				Expect(req.URL.RawQuery).To(Equal("token_format=opaque"))
 				w.Header().Set("Content-Type", "application/json")
+
 				t := &oauth2.Token{
 					AccessToken:  "test-access-token",
 					RefreshToken: "test-refresh-token",

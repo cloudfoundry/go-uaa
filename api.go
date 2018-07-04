@@ -165,7 +165,11 @@ func NewWithAuthorizationCode(target string, zoneID string, clientID string, cli
 	}
 
 	tokenURL := urlWithPath(*url, "/oauth/token")
-	tokenURL.Query().Add("token_format", tokenFormat.String())
+
+	query := tokenURL.Query()
+	query.Set("token_format", tokenFormat.String())
+	tokenURL.RawQuery = query.Encode()
+
 	c := &oauth2.Config{
 		ClientID:     clientID,
 		ClientSecret: clientSecret,
