@@ -195,4 +195,29 @@ func testGroupsExtra(t *testing.T, when spec.G, it spec.S) {
 			Expect(called).To(Equal(1))
 		})
 	})
+
+	when("RemoveGroupMember", func() {
+		it("removes a membership", func() {
+			membershipJSON := `{"origin":"uaa","type":"USER","value":"user-id-1"}`
+			handler = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+				Expect(req.Header.Get("Accept")).To(Equal("application/json"))
+				Expect(req.URL.Path).To(Equal(fmt.Sprintf("%s/%s/members", uaa.GroupsEndpoint, "group-id-1")))
+				w.WriteHeader(http.StatusOK)
+				w.Write([]byte(membershipJSON))
+			})
+			err := a.AddGroupMember("group-id-1", "user-id-1", "", "")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(called).To(Equal(1))
+
+			handler = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+				Expect(req.Header.Get("Accept")).To(Equal("application/json"))
+				Expect(req.URL.Path).To(Equal(fmt.Sprintf("%s/%s/members/%s", uaa.GroupsEndpoint, "group-id-1", "user-id-1")))
+				w.WriteHeader(http.StatusOK)
+				w.Write([]byte(membershipJSON))
+			})
+			err = a.RemoveGroupMember("group-id-1", "user-id-1", "", "")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(called).To(Equal(2))
+		})
+	})
 }
