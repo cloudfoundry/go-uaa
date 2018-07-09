@@ -31,7 +31,7 @@ type TokenFormat int
 
 // Valid TokenFormat values.
 const (
-	OpaqueToken TokenFormat = iota
+	OpaqueToken  TokenFormat = iota
 	JSONWebToken
 )
 
@@ -193,6 +193,46 @@ func NewWithAuthorizationCode(target string, zoneID string, clientID string, cli
 	}
 
 	a.AuthenticatedClient = c.Client(ctx, t)
+
+	return a, nil
+}
+
+func NewWithRefreshToken(target string, zoneID string, clientID string, clientSecret string, refreshToken string, skipSSLValidation bool, tokenFormat TokenFormat) (*API, error) {
+	url, err := BuildTargetURL(target)
+	if err != nil {
+		return nil, err
+	}
+	tokenURL := urlWithPath(*url, "/oauth/token")
+	query := tokenURL.Query()
+	query.Set("token_format", tokenFormat.String())
+	tokenURL.RawQuery = query.Encode()
+
+	c := &oauth2.Config{
+		ClientID:     clientID,
+		ClientSecret: clientSecret,
+		Endpoint: oauth2.Endpoint{
+			TokenURL: tokenURL.String(),
+		},
+	}
+
+	a := &API{
+		UnauthenticatedClient: &http.Client{Transport: http.DefaultTransport},
+		TargetURL:             url,
+		SkipSSLValidation:     skipSSLValidation,
+		ZoneID:                zoneID,
+	}
+
+	ctx := context.WithValue(context.Background(), oauth2.HTTPClient, a.UnauthenticatedClient)
+	tokenSource := c.TokenSource(ctx, &oauth2.Token{
+		RefreshToken: refreshToken,
+	})
+
+	token, err := tokenSource.Token()
+	if err != nil {
+		return nil, err
+	}
+
+	a.AuthenticatedClient = c.Client(ctx, token)
 
 	return a, nil
 }
