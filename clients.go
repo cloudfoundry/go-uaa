@@ -19,22 +19,24 @@ type paginatedClientList struct {
 }
 
 // Client is a UAA client
-// http://docs.cloudfoundry.org/api/uaa/version/4.14.0/index.html#clients.
+// http://docs.cloudfoundry.org/api/uaa/version/4.19.0/index.html#clients
 type Client struct {
 	ClientID             string   `json:"client_id,omitempty" generator:"id"`
-	ClientSecret         string   `json:"client_secret,omitempty"`
-	Scope                []string `json:"scope,omitempty"`
-	ResourceIDs          []string `json:"resource_ids,omitempty"`
 	AuthorizedGrantTypes []string `json:"authorized_grant_types,omitempty"`
 	RedirectURI          []string `json:"redirect_uri,omitempty"`
+	Scope                []string `json:"scope,omitempty"`
+	ResourceIDs          []string `json:"resource_ids,omitempty"`
 	Authorities          []string `json:"authorities,omitempty"`
-	TokenSalt            string   `json:"token_salt,omitempty"`
-	AllowedProviders     []string `json:"allowedproviders,omitempty"`
-	DisplayName          string   `json:"name,omitempty"`
-	LastModified         int64    `json:"lastModified,omitempty"`
-	RequiredUserGroups   []string `json:"required_user_groups,omitempty"`
+	AutoApprove          []string `json:"autoapprove,omitempty"`
 	AccessTokenValidity  int64    `json:"access_token_validity,omitempty"`
 	RefreshTokenValidity int64    `json:"refresh_token_validity,omitempty"`
+	AllowedProviders     []string `json:"allowedproviders,omitempty"`
+	DisplayName          string   `json:"name,omitempty"`
+	TokenSalt            string   `json:"token_salt,omitempty"`
+	CreatedWith          string   `json:"createdwith,omitempty"`
+	ApprovalsDeleted     bool     `json:"approvals_deleted,omitempty"`
+	RequiredUserGroups   []string `json:"required_user_groups,omitempty"`
+	ClientSecret         string   `json:"client_secret,omitempty"`
 }
 
 // GrantType is a type of oauth2 grant.
