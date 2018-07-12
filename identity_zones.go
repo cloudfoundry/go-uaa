@@ -16,6 +16,10 @@ type IdentityZone struct {
 	LastModified int                `json:"last_modified,omitempty"`
 }
 
+func (iz IdentityZone) UpdateID() string {
+	return iz.ID
+}
+
 // ClientSecretPolicy is an identity zone client secret policy.
 type ClientSecretPolicy struct {
 	MinLength                 int `json:"minLength,omitempty"`

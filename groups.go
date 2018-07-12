@@ -36,6 +36,10 @@ type Group struct {
 	Schemas     []string      `json:"schemas,omitempty"`
 }
 
+func (g Group) UpdateID() string {
+	return g.ID
+}
+
 // AddGroupMember adds the entity with the given memberID to the group with the
 // given ID. If no entityType is supplied, the entityType (which can be "USER"
 // or "GROUP") will be "USER". If no origin is supplied, the origin will be

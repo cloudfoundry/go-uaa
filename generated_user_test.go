@@ -154,7 +154,7 @@ func testUser(t *testing.T, when spec.G, it spec.S) {
 				Expect(req.Header.Get("Accept")).To(Equal("application/json"))
 				Expect(req.Header.Get("Content-Type")).To(Equal("application/json"))
 				Expect(req.Method).To(Equal(http.MethodPut))
-				Expect(req.URL.Path).To(Equal(uaa.UsersEndpoint))
+				Expect(req.URL.Path).To(Equal(uaa.UsersEndpoint + "/00000000-0000-0000-0000-000000000001"))
 				defer req.Body.Close()
 				body, _ := ioutil.ReadAll(req.Body)
 				Expect(body).To(MatchJSON(testUserJSON))
@@ -171,7 +171,7 @@ func testUser(t *testing.T, when spec.G, it spec.S) {
 		it("returns error when response cannot be parsed", func() {
 			handler = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 				Expect(req.Method).To(Equal(http.MethodPut))
-				Expect(req.URL.Path).To(Equal(uaa.UsersEndpoint))
+				Expect(req.URL.Path).To(Equal(uaa.UsersEndpoint + "/00000000-0000-0000-0000-000000000001"))
 				w.WriteHeader(http.StatusOK)
 				w.Write([]byte("{unparseable}"))
 			})
@@ -183,7 +183,7 @@ func testUser(t *testing.T, when spec.G, it spec.S) {
 		it("returns error when response is not 200 OK", func() {
 			handler = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 				Expect(req.Method).To(Equal(http.MethodPut))
-				Expect(req.URL.Path).To(Equal(uaa.UsersEndpoint))
+				Expect(req.URL.Path).To(Equal(uaa.UsersEndpoint + "/00000000-0000-0000-0000-000000000001"))
 				w.WriteHeader(http.StatusBadRequest)
 			})
 			updated, err := a.UpdateUser(testUserValue)

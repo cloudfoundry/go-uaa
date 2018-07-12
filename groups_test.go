@@ -71,10 +71,11 @@ const UaaAdminGroupResponse string = `{
 }`
 
 var testGroupValue uaa.Group = uaa.Group{
+	ID: "00000000-0000-0000-0000-000000000001",
 	DisplayName: "uaa.admin",
 }
 
-const testGroupJSON string = `{ "displayName": "uaa.admin" }`
+const testGroupJSON string = `{ "id" : "00000000-0000-0000-0000-000000000001", "displayName": "uaa.admin" }`
 
 func TestGroupsExtra(t *testing.T) {
 	spec.Run(t, "GroupsExtra", testGroupsExtra, spec.Report(report.Terminal{}))

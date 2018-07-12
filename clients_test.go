@@ -42,11 +42,11 @@ const clientListResponse = `{
 }`
 
 var testClientValue uaa.Client = uaa.Client{
-	ClientID:     "peanuts_client",
+	ClientID:     "00000000-0000-0000-0000-000000000001",
 	ClientSecret: "new_secret",
 }
 
-const testClientJSON string = `{"client_id": "peanuts_client", "client_secret": "new_secret"}`
+const testClientJSON string = `{"client_id": "00000000-0000-0000-0000-000000000001", "client_secret": "new_secret"}`
 
 func TestClientExtra(t *testing.T) {
 	spec.Run(t, "ClientExtra", testClientExtra, spec.Report(report.Terminal{}))
@@ -209,13 +209,13 @@ func testClientExtra(t *testing.T, when spec.G, it spec.S) {
 				Expect(req.Header.Get("Accept")).To(Equal("application/json"))
 				Expect(req.Header.Get("Content-Type")).To(Equal("application/json"))
 				Expect(req.Method).To(Equal(http.MethodPut))
-				Expect(req.URL.Path).To(Equal(uaa.ClientsEndpoint + "/peanuts_client/secret"))
+				Expect(req.URL.Path).To(Equal(uaa.ClientsEndpoint + "/00000000-0000-0000-0000-000000000001/secret"))
 				defer req.Body.Close()
 				body, _ := ioutil.ReadAll(req.Body)
-				Expect(body).To(MatchJSON(`{"clientId": "peanuts_client", "secret": "new_secret"}`))
+				Expect(body).To(MatchJSON(`{"clientId": "00000000-0000-0000-0000-000000000001", "secret": "new_secret"}`))
 				w.WriteHeader(http.StatusOK)
 			})
-			a.ChangeClientSecret("peanuts_client", "new_secret")
+			a.ChangeClientSecret("00000000-0000-0000-0000-000000000001", "new_secret")
 			Expect(called).To(Equal(1))
 		})
 
@@ -224,13 +224,13 @@ func testClientExtra(t *testing.T, when spec.G, it spec.S) {
 				Expect(req.Header.Get("Accept")).To(Equal("application/json"))
 				Expect(req.Header.Get("Content-Type")).To(Equal("application/json"))
 				Expect(req.Method).To(Equal(http.MethodPut))
-				Expect(req.URL.Path).To(Equal(uaa.ClientsEndpoint + "/peanuts_client/secret"))
+				Expect(req.URL.Path).To(Equal(uaa.ClientsEndpoint + "/00000000-0000-0000-0000-000000000001/secret"))
 				defer req.Body.Close()
 				body, _ := ioutil.ReadAll(req.Body)
-				Expect(body).To(MatchJSON(`{"clientId": "peanuts_client", "secret": "new_secret"}`))
+				Expect(body).To(MatchJSON(`{"clientId": "00000000-0000-0000-0000-000000000001", "secret": "new_secret"}`))
 				w.WriteHeader(http.StatusUnauthorized)
 			})
-			err := a.ChangeClientSecret("peanuts_client", "new_secret")
+			err := a.ChangeClientSecret("00000000-0000-0000-0000-000000000001", "new_secret")
 			Expect(called).To(Equal(1))
 			Expect(err).NotTo(BeNil())
 		})

@@ -38,7 +38,8 @@ func (a *API) CreateIdentityZone(identityzone IdentityZone) (*IdentityZone, erro
 
 // UpdateIdentityZone updates the given identityzone.
 func (a *API) UpdateIdentityZone(identityzone IdentityZone) (*IdentityZone, error) {
-	u := urlWithPath(*a.TargetURL, IdentityZonesEndpoint)
+	u := urlWithPath(*a.TargetURL, fmt.Sprintf("%s/%s", IdentityZonesEndpoint, identityzone.UpdateID()))
+
 	created := &IdentityZone{}
 	j, err := json.Marshal(identityzone)
 	if err != nil {

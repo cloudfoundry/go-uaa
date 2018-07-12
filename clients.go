@@ -37,6 +37,10 @@ type Client struct {
 	RefreshTokenValidity int64    `json:"refresh_token_validity,omitempty"`
 }
 
+func (c Client) UpdateID() string {
+	return c.ClientID
+}
+
 // GrantType is a type of oauth2 grant.
 type GrantType string
 

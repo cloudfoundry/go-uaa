@@ -71,12 +71,13 @@ const userResponse string = `{
 
 var userListResponse = fmt.Sprintf(PaginatedResponseTmpl, MarcusUserResponse, DrSeussUserResponse)
 var testUserValue uaa.User = uaa.User{
+	ID: "00000000-0000-0000-0000-000000000001",
 	Username: "marcus@stoicism.com",
 	Active:   newTrueP(),
 	Name:     &uaa.UserName{GivenName: "Marcus", FamilyName: "Aurelius"},
 }
 
-var testUserJSON string = `{ "userName": "marcus@stoicism.com", "active": true, "name" : { "familyName" : "Aurelius", "givenName" : "Marcus" }}`
+var testUserJSON string = `{ "id": "00000000-0000-0000-0000-000000000001", "userName": "marcus@stoicism.com", "active": true, "name" : { "familyName" : "Aurelius", "givenName" : "Marcus" }}`
 
 func newTrueP() *bool {
 	b := true

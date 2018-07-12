@@ -40,7 +40,8 @@ func (a *API) CreateGroup(group Group) (*Group, error) {
 
 // UpdateGroup updates the given group.
 func (a *API) UpdateGroup(group Group) (*Group, error) {
-	u := urlWithPath(*a.TargetURL, GroupsEndpoint)
+	u := urlWithPath(*a.TargetURL, fmt.Sprintf("%s/%s", GroupsEndpoint, group.UpdateID()))
+
 	created := &Group{}
 	j, err := json.Marshal(group)
 	if err != nil {

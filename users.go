@@ -78,6 +78,9 @@ type User struct {
 	Schemas              []string      `json:"schemas,omitempty"`
 }
 
+func (u User) UpdateID() string {
+	return u.ID
+}
 // paginatedUserList is the response from the API for a single page of users.
 type paginatedUserList struct {
 	Page
