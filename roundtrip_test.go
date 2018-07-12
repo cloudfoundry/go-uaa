@@ -10,6 +10,7 @@ import (
 	"github.com/sclevine/spec"
 	"github.com/sclevine/spec/report"
 	"golang.org/x/oauth2"
+	"net/http/httptest"
 )
 
 func TestEnsureTransport(t *testing.T) {
@@ -27,6 +28,28 @@ func testEnsureTransport(t *testing.T, when spec.G, it spec.S) {
 		it("is a no-op", func() {
 			a.ensureTransport(a.UnauthenticatedClient)
 			Expect(a.UnauthenticatedClient).To(BeNil())
+		})
+	})
+
+	when("the authenticated client is not set but the unauthenticated client is set", func() {
+		var s            *httptest.Server
+
+		it.Before(func() {
+			s = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {}))
+			a.UnauthenticatedClient = &http.Client{}
+		})
+
+		it.After(func() {
+			if s != nil {
+				s.Close()
+			}
+		})
+
+		it("will make a http call with the unauthenticated client", func() {
+			req, err := http.NewRequest("GET", s.URL, nil)
+			Expect(err).NotTo(HaveOccurred())
+			_, err = a.doAndRead(req, false)
+			Expect(err).NotTo(HaveOccurred())
 		})
 	})
 

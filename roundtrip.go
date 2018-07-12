@@ -3,7 +3,6 @@ package uaa
 import (
 	"crypto/tls"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -12,6 +11,7 @@ import (
 	"time"
 
 	"golang.org/x/oauth2"
+	"errors"
 )
 
 func (a *API) doJSON(method string, url *url.URL, body io.Reader, response interface{}, needsAuthentication bool) error {
@@ -51,15 +51,15 @@ func (a *API) doAndRead(req *http.Request, needsAuthentication bool) ([]byte, er
 	if a.Verbose {
 		logRequest(req)
 	}
-	if a.AuthenticatedClient == nil {
-		return nil, errors.New("doAndRead: the HTTPClient cannot be nil")
-	}
 	a.ensureTimeout()
 	var (
 		resp *http.Response
 		err  error
 	)
 	if needsAuthentication {
+		if a.AuthenticatedClient == nil {
+			return nil, errors.New("doAndRead: the HTTPClient cannot be nil")
+		}
 		a.ensureTransport(a.AuthenticatedClient)
 		resp, err = a.AuthenticatedClient.Do(req)
 	} else {
