@@ -32,7 +32,7 @@ func testEnsureTransport(t *testing.T, when spec.G, it spec.S) {
 	})
 
 	when("the authenticated client is not set but the unauthenticated client is set", func() {
-		var s            *httptest.Server
+		var s *httptest.Server
 
 		it.Before(func() {
 			s = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {}))

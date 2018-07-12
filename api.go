@@ -31,7 +31,7 @@ type TokenFormat int
 
 // Valid TokenFormat values.
 const (
-	OpaqueToken  TokenFormat = iota
+	OpaqueToken TokenFormat = iota
 	JSONWebToken
 )
 

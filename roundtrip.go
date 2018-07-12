@@ -10,8 +10,8 @@ import (
 	"net/url"
 	"time"
 
-	"golang.org/x/oauth2"
 	"errors"
+	"golang.org/x/oauth2"
 )
 
 func (a *API) doJSON(method string, url *url.URL, body io.Reader, response interface{}, needsAuthentication bool) error {
@@ -96,6 +96,10 @@ func (a *API) doAndRead(req *http.Request, needsAuthentication bool) ([]byte, er
 func (a *API) ensureTimeout() {
 	if a.AuthenticatedClient != nil && a.AuthenticatedClient.Timeout == 0 {
 		a.AuthenticatedClient.Timeout = time.Second * 120
+	}
+
+	if a.UnauthenticatedClient != nil && a.UnauthenticatedClient.Timeout == 0 {
+		a.UnauthenticatedClient.Timeout = time.Second * 120
 	}
 }
 
