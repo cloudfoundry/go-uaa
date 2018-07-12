@@ -22,6 +22,7 @@ var typesToProcess = []interface{}{
 	uaa.Group{},
 	uaa.User{},
 	uaa.IdentityZone{},
+	uaa.MFAProvider{},
 }
 
 func main() {
@@ -46,7 +47,7 @@ func main() {
 			t.SupportsAttributes = false
 		}
 
-		if typeName == "IdentityZone" {
+		if typeName == "IdentityZone" || typeName == "MFAProvider" {
 			t.SupportsPaging = false
 		}
 
