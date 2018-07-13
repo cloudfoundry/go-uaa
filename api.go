@@ -159,11 +159,6 @@ func NewWithAuthorizationCode(target string, zoneID string, clientID string, cli
 	}
 
 	tokenURL := urlWithPath(*url, "/oauth/token")
-
-	query := tokenURL.Query()
-	query.Set("token_format", tokenFormat.String())
-	tokenURL.RawQuery = query.Encode()
-
 	c := &oauth2.Config{
 		ClientID:     clientID,
 		ClientSecret: clientSecret,
@@ -181,7 +176,10 @@ func NewWithAuthorizationCode(target string, zoneID string, clientID string, cli
 	}
 	a.ensureTransport(a.UnauthenticatedClient)
 	ctx := context.WithValue(context.Background(), oauth2.HTTPClient, a.UnauthenticatedClient)
-	t, err := c.Exchange(ctx, code)
+	tokenFormatParam := oauth2.SetAuthURLParam("token_format", tokenFormat.String())
+	responseTypeParam := oauth2.SetAuthURLParam("response_type", "token")
+
+	t, err := c.Exchange(ctx, code, tokenFormatParam, responseTypeParam)
 	if err != nil {
 		return nil, err
 	}

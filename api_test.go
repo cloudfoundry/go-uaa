@@ -143,12 +143,18 @@ func testNew(t *testing.T, when spec.G, it spec.S) {
 		var (
 			s           *httptest.Server
 			returnToken bool
+			rawQuery    string
+			reqBody     []byte
 		)
 
 		it.Before(func() {
 			returnToken = true
 			s = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-				Expect(req.URL.RawQuery).To(Equal("token_format=opaque"))
+				var err error
+				rawQuery = req.URL.RawQuery
+				reqBody, err = ioutil.ReadAll(req.Body)
+				Expect(err).NotTo(HaveOccurred())
+
 				w.Header().Set("Content-Type", "application/json")
 
 				t := &oauth2.Token{
@@ -161,7 +167,7 @@ func testNew(t *testing.T, when spec.G, it spec.S) {
 					t = nil
 				}
 				w.WriteHeader(http.StatusOK)
-				err := json.NewEncoder(w).Encode(t)
+				err = json.NewEncoder(w).Encode(t)
 				Expect(err).NotTo(HaveOccurred())
 			}))
 		})
@@ -198,6 +204,17 @@ func testNew(t *testing.T, when spec.G, it spec.S) {
 			Expect(err).To(HaveOccurred())
 			Expect(api).To(BeNil())
 		})
+
+		it("ensure that auth code grant type params are set correctly", func() {
+			api, err := uaa.NewWithAuthorizationCode(s.URL, "", "", "", "", false, uaa.OpaqueToken)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(api).NotTo(BeNil())
+
+			Expect(string(reqBody)).To(ContainSubstring("token_format=opaque"))
+			Expect(string(reqBody)).To(ContainSubstring("response_type=token"))
+			Expect(string(reqBody)).To(ContainSubstring("grant_type=authorization_code"))
+		})
+
 	})
 
 	when("NewWithRefreshToken", func() {
