@@ -65,6 +65,30 @@ func (a *API) AddGroupMember(groupID string, memberID string, entityType string,
 	return nil
 }
 
+// RemoveGroupMember adds the entity with the given memberID to the group with the
+// given ID. If no entityType is supplied, the entityType (which can be "USER"
+// or "GROUP") will be "USER". If no origin is supplied, the origin will be
+// "uaa".
+func (a *API) RemoveGroupMember(groupID string, memberID string, entityType string, origin string) error {
+	u := urlWithPath(*a.TargetURL, fmt.Sprintf("%s/%s/members/%s", GroupsEndpoint, groupID, memberID))
+	if origin == "" {
+		origin = "uaa"
+	}
+	if entityType == "" {
+		entityType = "USER"
+	}
+	membership := GroupMember{Origin: origin, Type: entityType, Value: memberID}
+	j, err := json.Marshal(membership)
+	if err != nil {
+		return err
+	}
+	err = a.doJSON(http.MethodDelete, &u, bytes.NewBuffer([]byte(j)), nil, true)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // GetGroupByName gets the group with the given name
 // http://docs.cloudfoundry.org/api/uaa/version/4.14.0/index.html#list-4.
 func (a *API) GetGroupByName(name string, attributes string) (*Group, error) {
