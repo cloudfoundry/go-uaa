@@ -65,10 +65,10 @@ func (a *API) AddGroupMember(groupID string, memberID string, entityType string,
 	return nil
 }
 
-// RemoveGroupMember adds the entity with the given memberID to the group with the
-// given ID. If no entityType is supplied, the entityType (which can be "USER"
-// or "GROUP") will be "USER". If no origin is supplied, the origin will be
-// "uaa".
+// RemoveGroupMember removes the entity with the given memberID from the group
+// with the given ID. If no entityType is supplied, the entityType (which can be
+// "USER" or "GROUP") will be "USER". If no origin is supplied, the origin will
+// be "uaa".
 func (a *API) RemoveGroupMember(groupID string, memberID string, entityType string, origin string) error {
 	u := urlWithPath(*a.TargetURL, fmt.Sprintf("%s/%s/members/%s", GroupsEndpoint, groupID, memberID))
 	if origin == "" {
