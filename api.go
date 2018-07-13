@@ -57,7 +57,7 @@ func (t *tokenTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 
 // NewWithToken builds an API that uses the given token to make authenticated
 // requests to the UAA API.
-func NewWithToken(target string, zoneID string, token oauth2.Token) (*API, error) {
+func NewWithToken(target string, zoneID string, token oauth2.Token, skipSSLValidation bool) (*API, error) {
 	if token.AccessToken == "" || token.Expiry.Before(time.Now()) {
 		return nil, errors.New("must supply a valid token")
 	}
@@ -90,12 +90,13 @@ func NewWithToken(target string, zoneID string, token oauth2.Token) (*API, error
 		AuthenticatedClient:   tokenClient,
 		TargetURL:             u,
 		ZoneID:                zoneID,
+		SkipSSLValidation:     skipSSLValidation,
 	}, nil
 }
 
 // NewWithClientCredentials builds an API that uses the client credentials grant
 // to get a token for use with the UAA API.
-func NewWithClientCredentials(target string, zoneID string, clientID string, clientSecret string, tokenFormat TokenFormat) (*API, error) {
+func NewWithClientCredentials(target string, zoneID string, clientID string, clientSecret string, tokenFormat TokenFormat, skipSSLValidation bool) (*API, error) {
 	u, err := BuildTargetURL(target)
 	if err != nil {
 		return nil, err
@@ -111,17 +112,22 @@ func NewWithClientCredentials(target string, zoneID string, clientID string, cli
 		EndpointParams: v,
 	}
 	client := &http.Client{Transport: http.DefaultTransport}
-	return &API{
+	api := API{
 		UnauthenticatedClient: client,
 		AuthenticatedClient:   c.Client(context.WithValue(context.Background(), oauth2.HTTPClient, client)),
 		TargetURL:             u,
 		ZoneID:                zoneID,
-	}, nil
+		SkipSSLValidation:     skipSSLValidation,
+	}
+
+	api.ensureTransport(api.AuthenticatedClient)
+
+	return &api, nil
 }
 
 // NewWithPasswordCredentials builds an API that uses the password credentials
 // grant to get a token for use with the UAA API.
-func NewWithPasswordCredentials(target string, zoneID string, clientID string, clientSecret string, username string, password string, tokenFormat TokenFormat) (*API, error) {
+func NewWithPasswordCredentials(target string, zoneID string, clientID string, clientSecret string, username string, password string, tokenFormat TokenFormat, skipSSLValidation bool) (*API, error) {
 	u, err := BuildTargetURL(target)
 	if err != nil {
 		return nil, err
@@ -146,6 +152,7 @@ func NewWithPasswordCredentials(target string, zoneID string, clientID string, c
 		AuthenticatedClient:   c.Client(context.WithValue(context.Background(), oauth2.HTTPClient, client)),
 		TargetURL:             u,
 		ZoneID:                zoneID,
+		SkipSSLValidation:     skipSSLValidation,
 	}, nil
 }
 
