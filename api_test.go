@@ -8,12 +8,13 @@ import (
 	"testing"
 	"time"
 
+	"io/ioutil"
+
 	"github.com/cloudfoundry-community/go-uaa"
 	. "github.com/onsi/gomega"
 	"github.com/sclevine/spec"
 	"github.com/sclevine/spec/report"
 	"golang.org/x/oauth2"
-	"io/ioutil"
 )
 
 func TestUAA(t *testing.T) {
@@ -215,10 +216,7 @@ func testNew(t *testing.T, when spec.G, it spec.S) {
 				rawQuery = req.URL.RawQuery
 				reqBody, err = ioutil.ReadAll(req.Body)
 				Expect(err).NotTo(HaveOccurred())
-				//Expect(req.URL.RawQuery).To(Equal("token_format=jwt"))
-				//Expect(req.Body).Should(gbytes.Say("grant_type=refresh_token"))
 
-				println(req.URL.String())
 				w.Header().Set("Content-Type", "application/json")
 				t := &oauth2.Token{
 					AccessToken:  "test-access-token",

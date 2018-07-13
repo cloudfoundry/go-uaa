@@ -151,13 +151,7 @@ func NewWithPasswordCredentials(target string, zoneID string, clientID string, c
 
 // NewWithAuthorizationCode builds an API that uses the authorization code
 // grant to get a token for use with the UAA API.
-//
-// You can supply an http.Client because this function has side-effects (a
-// token is requested from the target).
-//
-// If you do not supply an http.Client,
-//  http.Client{Transport: http.DefaultTransport}
-// will be used.
+
 func NewWithAuthorizationCode(target string, zoneID string, clientID string, clientSecret string, code string, skipSSLValidation bool, tokenFormat TokenFormat) (*API, error) {
 	url, err := BuildTargetURL(target)
 	if err != nil {

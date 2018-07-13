@@ -6,11 +6,12 @@ import (
 	"testing"
 	"time"
 
+	"net/http/httptest"
+
 	. "github.com/onsi/gomega"
 	"github.com/sclevine/spec"
 	"github.com/sclevine/spec/report"
 	"golang.org/x/oauth2"
-	"net/http/httptest"
 )
 
 func TestEnsureTransport(t *testing.T) {
