@@ -71,7 +71,7 @@ const userResponse string = `{
 
 var userListResponse = fmt.Sprintf(PaginatedResponseTmpl, MarcusUserResponse, DrSeussUserResponse)
 var testUserValue uaa.User = uaa.User{
-	ID: "00000000-0000-0000-0000-000000000001",
+	ID:       "00000000-0000-0000-0000-000000000001",
 	Username: "marcus@stoicism.com",
 	Active:   newTrueP(),
 	Name:     &uaa.UserName{GivenName: "Marcus", FamilyName: "Aurelius"},

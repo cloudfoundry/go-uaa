@@ -1,6 +1,6 @@
 package uaa
 
-// MFAProvdersEndpoint is the path to the MFA providers resource.
+// MFAProvidersEndpoint is the path to the MFA providers resource.
 const MFAProvidersEndpoint string = "/mfa-providers"
 
 // MFAProviderConfig is configuration for an MFA provider
@@ -19,4 +19,9 @@ type MFAProvider struct {
 	Type           string            `json:"type"`
 	Created        int               `json:"created"`
 	LastModified   int               `json:"last_modified"`
+}
+
+// Identifier returns the field used to uniquely identify a MFAProvider.
+func (m MFAProvider) Identifier() string {
+	return m.ID
 }

@@ -37,7 +37,8 @@ type Client struct {
 	RefreshTokenValidity int64    `json:"refresh_token_validity,omitempty"`
 }
 
-func (c Client) UpdateID() string {
+// Identifier returns the field used to uniquely identify a Client.
+func (c Client) Identifier() string {
 	return c.ClientID
 }
 

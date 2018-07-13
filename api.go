@@ -197,6 +197,8 @@ func NewWithAuthorizationCode(target string, zoneID string, clientID string, cli
 	return a, nil
 }
 
+// NewWithRefreshToken builds an API that uses the given refresh token to get an
+// access token for use with the UAA API.
 func NewWithRefreshToken(target string, zoneID string, clientID string, clientSecret string, refreshToken string, skipSSLValidation bool, tokenFormat TokenFormat) (*API, error) {
 	url, err := BuildTargetURL(target)
 	if err != nil {

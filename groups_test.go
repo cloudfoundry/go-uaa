@@ -71,7 +71,7 @@ const UaaAdminGroupResponse string = `{
 }`
 
 var testGroupValue uaa.Group = uaa.Group{
-	ID: "00000000-0000-0000-0000-000000000001",
+	ID:          "00000000-0000-0000-0000-000000000001",
 	DisplayName: "uaa.admin",
 }
 

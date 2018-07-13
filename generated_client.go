@@ -40,7 +40,7 @@ func (a *API) CreateClient(client Client) (*Client, error) {
 
 // UpdateClient updates the given client.
 func (a *API) UpdateClient(client Client) (*Client, error) {
-	u := urlWithPath(*a.TargetURL, fmt.Sprintf("%s/%s", ClientsEndpoint, client.UpdateID()))
+	u := urlWithPath(*a.TargetURL, fmt.Sprintf("%s/%s", ClientsEndpoint, client.Identifier()))
 
 	created := &Client{}
 	j, err := json.Marshal(client)

@@ -78,9 +78,11 @@ type User struct {
 	Schemas              []string      `json:"schemas,omitempty"`
 }
 
-func (u User) UpdateID() string {
+// Identifier returns the field used to uniquely identify a User.
+func (u User) Identifier() string {
 	return u.ID
 }
+
 // paginatedUserList is the response from the API for a single page of users.
 type paginatedUserList struct {
 	Page

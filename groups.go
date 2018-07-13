@@ -36,7 +36,8 @@ type Group struct {
 	Schemas     []string      `json:"schemas,omitempty"`
 }
 
-func (g Group) UpdateID() string {
+// Identifier returns the field used to uniquely identify a Group.
+func (g Group) Identifier() string {
 	return g.ID
 }
 

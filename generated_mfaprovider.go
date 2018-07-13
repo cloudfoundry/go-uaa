@@ -38,7 +38,8 @@ func (a *API) CreateMFAProvider(mfaprovider MFAProvider) (*MFAProvider, error) {
 
 // UpdateMFAProvider updates the given mfaprovider.
 func (a *API) UpdateMFAProvider(mfaprovider MFAProvider) (*MFAProvider, error) {
-	u := urlWithPath(*a.TargetURL, MFAProvidersEndpoint)
+	u := urlWithPath(*a.TargetURL, fmt.Sprintf("%s/%s", MFAProvidersEndpoint, mfaprovider.Identifier()))
+
 	created := &MFAProvider{}
 	j, err := json.Marshal(mfaprovider)
 	if err != nil {

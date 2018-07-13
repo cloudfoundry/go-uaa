@@ -16,7 +16,8 @@ type IdentityZone struct {
 	LastModified int                `json:"last_modified,omitempty"`
 }
 
-func (iz IdentityZone) UpdateID() string {
+// Identifier returns the field used to uniquely identify an IdentityZone.
+func (iz IdentityZone) Identifier() string {
 	return iz.ID
 }
 

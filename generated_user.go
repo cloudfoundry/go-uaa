@@ -40,7 +40,7 @@ func (a *API) CreateUser(user User) (*User, error) {
 
 // UpdateUser updates the given user.
 func (a *API) UpdateUser(user User) (*User, error) {
-	u := urlWithPath(*a.TargetURL, fmt.Sprintf("%s/%s", UsersEndpoint, user.UpdateID()))
+	u := urlWithPath(*a.TargetURL, fmt.Sprintf("%s/%s", UsersEndpoint, user.Identifier()))
 
 	created := &User{}
 	j, err := json.Marshal(user)
