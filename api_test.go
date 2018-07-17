@@ -143,7 +143,6 @@ func testNew(t *testing.T, when spec.G, it spec.S) {
 		var (
 			s           *httptest.Server
 			returnToken bool
-			rawQuery    string
 			reqBody     []byte
 		)
 
@@ -151,7 +150,6 @@ func testNew(t *testing.T, when spec.G, it spec.S) {
 			returnToken = true
 			s = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 				var err error
-				rawQuery = req.URL.RawQuery
 				reqBody, err = ioutil.ReadAll(req.Body)
 				Expect(err).NotTo(HaveOccurred())
 
