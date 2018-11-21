@@ -153,6 +153,7 @@ func testUser(t *testing.T, when spec.G, it spec.S) {
 			handler = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 				Expect(req.Header.Get("Accept")).To(Equal("application/json"))
 				Expect(req.Header.Get("Content-Type")).To(Equal("application/json"))
+				Expect(req.Header.Get("If-Match")).To(Equal("*"))
 				Expect(req.Method).To(Equal(http.MethodPut))
 				Expect(req.URL.Path).To(Equal(uaa.UsersEndpoint + "/00000000-0000-0000-0000-000000000001"))
 				defer req.Body.Close()
@@ -165,7 +166,7 @@ func testUser(t *testing.T, when spec.G, it spec.S) {
 			updated, err := a.UpdateUser(testUserValue)
 			Expect(called).To(Equal(1))
 			Expect(err).NotTo(HaveOccurred())
-			Expect(updated).NotTo(BeNil())
+			Expect(updated).ToNot(Equal(uaa.User{}))
 		})
 
 		it("returns error when response cannot be parsed", func() {

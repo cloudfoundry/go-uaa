@@ -3,6 +3,7 @@ package uaa
 import (
 	"crypto/tls"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -10,8 +11,7 @@ import (
 	"net/url"
 	"time"
 
-	"errors"
-
+	errorspkg "github.com/pkg/errors"
 	"golang.org/x/oauth2"
 )
 
@@ -72,8 +72,7 @@ func (a *API) doAndRead(req *http.Request, needsAuthentication bool) ([]byte, er
 		if a.Verbose {
 			fmt.Printf("%v\n\n", err)
 		}
-
-		return nil, requestError(req.URL.String())
+		return nil, errorspkg.Wrap(err, requestError(req.URL.String()).Error())
 	}
 
 	if a.Verbose {
@@ -85,11 +84,11 @@ func (a *API) doAndRead(req *http.Request, needsAuthentication bool) ([]byte, er
 		if a.Verbose {
 			fmt.Printf("%v\n\n", err)
 		}
-		return nil, unknownError()
+		return nil, errorspkg.Wrap(err, unknownError().Error())
 	}
 
 	if !is2XX(resp.StatusCode) {
-		return nil, requestError(req.URL.String())
+		return nil, errorspkg.Wrapf(requestError(req.URL.String()), "wrong status %s received", resp.Status)
 	}
 	return bytes, nil
 }

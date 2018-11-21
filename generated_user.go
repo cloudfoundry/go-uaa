@@ -47,7 +47,11 @@ func (a *API) UpdateUser(user User) (*User, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = a.doJSON(http.MethodPut, &u, bytes.NewBuffer([]byte(j)), created, true)
+	headers := map[string]string{
+		"If-Match": "*",
+	}
+
+	err = a.doJSONWithHeaders(http.MethodPut, &u, headers, bytes.NewBuffer([]byte(j)), created, true)
 	if err != nil {
 		return nil, err
 	}
