@@ -13,7 +13,7 @@ type UserInfo struct {
 	GivenName         string   `json:"given_name"`
 	FamilyName        string   `json:"family_name"`
 	Email             string   `json:"email"`
-	PhoneNumber       string `json:"phone_number"`
+	PhoneNumber       string   `json:"phone_number"`
 	PreviousLoginTime int64    `json:"previous_logon_time"`
 	Name              string   `json:"name"`
 }
