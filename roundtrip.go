@@ -45,6 +45,7 @@ func (a *API) doJSONWithHeaders(method string, url *url.URL, headers map[string]
 func (a *API) doAndRead(req *http.Request, needsAuthentication bool) ([]byte, error) {
 	req.Header.Add("Accept", "application/json")
 	req.Header.Add("X-Identity-Zone-Id", a.ZoneID)
+	req.Header.Set("User-Agent", a.UserAgent)
 	switch req.Method {
 	case http.MethodPut, http.MethodPost, http.MethodPatch:
 		req.Header.Add("Content-Type", "application/json")
