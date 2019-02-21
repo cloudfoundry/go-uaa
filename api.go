@@ -23,6 +23,7 @@ type API struct {
 	SkipSSLValidation     bool
 	Verbose               bool
 	ZoneID                string
+	UserAgent             string
 }
 
 // TokenFormat is the format of a token.
@@ -83,6 +84,7 @@ func NewWithToken(target string, zoneID string, token oauth2.Token) (*API, error
 		AuthenticatedClient:   tokenClient,
 		TargetURL:             u,
 		ZoneID:                zoneID,
+		UserAgent:             "go-uaa",
 	}, nil
 }
 
@@ -110,6 +112,7 @@ func NewWithClientCredentials(target string, zoneID string, clientID string, cli
 		TargetURL:             u,
 		ZoneID:                zoneID,
 		SkipSSLValidation:     skipSSLValidation,
+		UserAgent:             "go-uaa",
 	}
 	api.ensureTransport(api.AuthenticatedClient)
 	api.ensureTransport(api.UnauthenticatedClient)
@@ -144,6 +147,7 @@ func NewWithPasswordCredentials(target string, zoneID string, clientID string, c
 		TargetURL:             u,
 		ZoneID:                zoneID,
 		SkipSSLValidation:     skipSSLValidation,
+		UserAgent:             "go-uaa",
 	}
 	api.ensureTransport(api.AuthenticatedClient)
 	api.ensureTransport(api.UnauthenticatedClient)
@@ -173,6 +177,7 @@ func NewWithAuthorizationCode(target string, zoneID string, clientID string, cli
 		TargetURL:             url,
 		SkipSSLValidation:     skipSSLValidation,
 		ZoneID:                zoneID,
+		UserAgent:             "go-uaa",
 	}
 
 	api.ensureTransport(api.UnauthenticatedClient)
@@ -215,6 +220,7 @@ func NewWithRefreshToken(target string, zoneID string, clientID string, clientSe
 		TargetURL:             url,
 		SkipSSLValidation:     skipSSLValidation,
 		ZoneID:                zoneID,
+		UserAgent:             "go-uaa",
 	}
 	api.ensureTransport(api.UnauthenticatedClient)
 	ctx := context.WithValue(context.Background(), oauth2.HTTPClient, api.UnauthenticatedClient)
