@@ -41,8 +41,8 @@ type Group struct {
 // paginatedGroupMappingList is the response from the API for a single page of group mappings.
 type paginatedGroupMappingList struct {
 	Page
-	Resources []GroupMapping  `json:"resources"`
-	Schemas   []string `json:"schemas"`
+	Resources []GroupMapping `json:"resources"`
+	Schemas   []string       `json:"schemas"`
 }
 
 // GroupMapping is a container for external group mapping
@@ -212,4 +212,3 @@ func (a *API) ListAllGroupMappings(origin string) ([]GroupMapping, error) {
 	}
 	return results, nil
 }
-
