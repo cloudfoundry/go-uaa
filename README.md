@@ -58,7 +58,7 @@ func main() {
 * For the foreseeable future, releases will be in the `v0.x.y` range
 * You should expect breaking changes until `v1.x.y` releases occur
 * Notifications of breaking changes will be made via release notes associated with each tag
-* You should use a vendoring solution (like `dep`) until the `vgo` proposal is fully integrated with the `go` toolchain
+* You should [use `go modules`](https://blog.golang.org/using-go-modules) with this package
 
 ### Contributing
 
