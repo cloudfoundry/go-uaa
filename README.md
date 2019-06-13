@@ -37,14 +37,14 @@ import (
 )
 
 func main() {
-  // construct the API, and validate it
-  api := uaa.New("https://uaa.example.net", "").WithClientCredentials("client-id", "client-secret", uaa.JSONWebToken)
-  err := api.Validate()
-  if err != nil {
-    log.Fatal(err)
-  }
+	// construct the API, and validate it
+	api := uaa.New("https://uaa.example.net", "").WithClientCredentials("client-id", "client-secret", uaa.JSONWebToken)
+	err := api.Validate()
+	if err != nil {
+		log.Fatal(err)
+	}
 
-  // use the API to fetch a user
+	// use the API to fetch a user
 	user, err := api.GetUserByUsername("test@example.net", "uaa", "")
 	if err != nil {
 		log.Fatal(err)
