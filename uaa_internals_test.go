@@ -13,6 +13,7 @@ func init() {
 	suite = spec.New("uaa-internals", spec.Report(report.Terminal{}))
 	suite("ensureTransport", testEnsureTransport)
 	suite("contains", testContains)
+	suite("URLWithPath", testURLWithPath)
 }
 
 func TestUAAInternals(t *testing.T) {
