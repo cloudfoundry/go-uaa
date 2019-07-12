@@ -258,8 +258,8 @@ func testNew(t *testing.T, when spec.G, it spec.S) {
 
 		when("success", func() {
 		  it.Before(func() {
-        // Token retrieval is done as part of Validate
-				// Validate is called three times on construction
+        // Token retrieval is done as part of validateAuthorizationCode
+				// validateAuthorizationCode is called two times on construction
         // AuthStyle is set to AuthStyleAutoDetect, failed token requests are retried
 				// Because the first token reqest succeeds, later token attempts are skipped
         // 1 token request, 1 attempt each => 1 request
@@ -291,12 +291,10 @@ func testNew(t *testing.T, when spec.G, it spec.S) {
 
 		when("created with an invalid auth code", func() {
       it.Before(func() {
-        // Token retrieval is done as part of Validate
-				// Validate is called three times on construction
+        // Token retrieval is done as part of validateAuthorizationCode
+				// validateAuthorizationCode is called two times on construction
         // AuthStyle is set to AuthStyleAutoDetect, failed token requests are retried
-        // 3 token requests, 2 attempts each => 6 requests
-				stubTokenFailure("client-id", "client-secret", "", uaa.JSONWebToken)
-				stubTokenFailure("client-id", "client-secret", "", uaa.JSONWebToken)
+        // 2 token requests, 2 attempts each => 4 requests
 				stubTokenFailure("client-id", "client-secret", "", uaa.JSONWebToken)
 				stubTokenFailure("client-id", "client-secret", "", uaa.JSONWebToken)
 				stubTokenFailure("client-id", "client-secret", "", uaa.JSONWebToken)
@@ -312,12 +310,10 @@ func testNew(t *testing.T, when spec.G, it spec.S) {
 
 		when("the token response is missing a token", func() {
       it.Before(func() {
-        // Token retrieval is done as part of Validate
-				// Validate is called three times on construction
+        // Token retrieval is done as part of validateAuthorizationCode
+				// validateAuthorizationCode is called two times on construction
         // AuthStyle is set to AuthStyleAutoDetect, failed token requests are retried
-        // 3 token requests, 2 attempts each => 6 requests
-				stubMalformedTokenSuccess("client-id", "client-secret", "auth-code", uaa.OpaqueToken)
-				stubMalformedTokenSuccess("client-id", "client-secret", "auth-code", uaa.OpaqueToken)
+        // 2 token requests, 2 attempts each => 4 requests
 				stubMalformedTokenSuccess("client-id", "client-secret", "auth-code", uaa.OpaqueToken)
 				stubMalformedTokenSuccess("client-id", "client-secret", "auth-code", uaa.OpaqueToken)
 				stubMalformedTokenSuccess("client-id", "client-secret", "auth-code", uaa.OpaqueToken)
@@ -333,8 +329,8 @@ func testNew(t *testing.T, when spec.G, it spec.S) {
 
 		when("the UnauthenticatedClient is removed", func() {
       it.Before(func() {
-        // Token retrieval is done as part of Validate
-				// Validate is called three times on construction
+        // Token retrieval is done as part of validateAuthorizationCode
+				// validateAuthorizationCode is called two times on construction
         // AuthStyle is set to AuthStyleAutoDetect, failed token requests are retried
 				// Because the first token reqest succeeds, later token attempts are skipped
         // Then another token is explicitly requested
@@ -392,8 +388,8 @@ func testNew(t *testing.T, when spec.G, it spec.S) {
 
 		when("success", func() {
 		  it.Before(func() {
-        // Token retrieval is done as part of Validate
-				// Validate is called three times on construction
+        // Token retrieval is done as part of validateRefreshToken
+				// validateRefreshToken is called two times on construction
         // AuthStyle is set to AuthStyleAutoDetect, failed token requests are retried
 				// Because the first token reqest succeeds, later token attempts are skipped
         // 1 token request, 1 attempt each => 1 request
@@ -434,12 +430,10 @@ func testNew(t *testing.T, when spec.G, it spec.S) {
 
 		when("the token response is missing a token", func() {
       it.Before(func() {
-        // Token retrieval is done as part of Validate
-				// Validate is called three times on construction
+        // Token retrieval is done as part of validateRefreshToken
+				// validateRefreshToken is called two times on construction
         // AuthStyle is set to AuthStyleAutoDetect, failed token requests are retried
-        // 3 token requests, 2 attempts each => 6 requests
-				stubMalformedTokenSuccess("client-id", "client-secret", "refresh-token", uaa.JSONWebToken)
-				stubMalformedTokenSuccess("client-id", "client-secret", "refresh-token", uaa.JSONWebToken)
+        // 2 token requests, 2 attempts each => 4 requests
 				stubMalformedTokenSuccess("client-id", "client-secret", "refresh-token", uaa.JSONWebToken)
 				stubMalformedTokenSuccess("client-id", "client-secret", "refresh-token", uaa.JSONWebToken)
 				stubMalformedTokenSuccess("client-id", "client-secret", "refresh-token", uaa.JSONWebToken)
@@ -456,8 +450,8 @@ func testNew(t *testing.T, when spec.G, it spec.S) {
 
 		when("the UnauthenticatedClient is removed", func() {
       it.Before(func() {
-        // Token retrieval is done as part of Validate
-				// Validate is called three times on construction
+        // Token retrieval is done as part of validateRefreshToken
+				// validateRefreshToken is called two times on construction
         // AuthStyle is set to AuthStyleAutoDetect, failed token requests are retried
 				// Because the first token reqest succeeds, later token attempts are skipped
         // Then another token is explicitly requested

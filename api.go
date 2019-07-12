@@ -304,7 +304,7 @@ func (a *API) Token(ctx context.Context) (*oauth2.Token, error) {
 // NewWithAuthorizationCode builds an API that uses the authorization code
 // grant to get a token for use with the UAA API.
 func NewWithAuthorizationCode(target string, zoneID string, clientID string, clientSecret string, authorizationCode string, tokenFormat TokenFormat, skipSSLValidation bool) (*API, error) {
-	a := New(target, zoneID).WithAuthorizationCode(clientID, clientSecret, authorizationCode, tokenFormat).WithSkipSSLValidation(skipSSLValidation)
+	a := New(target, zoneID).WithSkipSSLValidation(skipSSLValidation).WithAuthorizationCode(clientID, clientSecret, authorizationCode, tokenFormat)
 	err := a.Validate()
 	if err != nil {
 		return nil, err
@@ -356,7 +356,7 @@ func (a *API) validateAuthorizationCode() error {
 // NewWithRefreshToken builds an API that uses the given refresh token to get an
 // access token for use with the UAA API.
 func NewWithRefreshToken(target string, zoneID string, clientID string, clientSecret string, refreshToken string, tokenFormat TokenFormat, skipSSLValidation bool) (*API, error) {
-	a := New(target, zoneID).WithRefreshToken(clientID, clientSecret, refreshToken, tokenFormat).WithSkipSSLValidation(skipSSLValidation)
+	a := New(target, zoneID).WithSkipSSLValidation(skipSSLValidation).WithRefreshToken(clientID, clientSecret, refreshToken, tokenFormat)
 	err := a.Validate()
 	if err != nil {
 		return nil, err
