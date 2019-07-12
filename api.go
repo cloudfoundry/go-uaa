@@ -165,6 +165,7 @@ func (a *API) validateClientCredentials() error {
 		ClientSecret:   a.clientSecret,
 		TokenURL:       tokenURL.String(),
 		EndpointParams: v,
+		AuthStyle:      oauth2.AuthStyleInHeader,
 	}
 	a.clientCredentialsConfig = c
 	a.AuthenticatedClient = c.Client(context.WithValue(context.Background(), oauth2.HTTPClient, a.UnauthenticatedClient))
@@ -332,7 +333,8 @@ func (a *API) validateAuthorizationCode() error {
 		ClientID:     a.clientID,
 		ClientSecret: a.clientSecret,
 		Endpoint: oauth2.Endpoint{
-			TokenURL: tokenURL.String(),
+			TokenURL:  tokenURL.String(),
+			AuthStyle: oauth2.AuthStyleInHeader,
 		},
 	}
 	a.oauthConfig = c
@@ -387,7 +389,8 @@ func (a *API) validateRefreshToken() error {
 		ClientID:     a.clientID,
 		ClientSecret: a.clientSecret,
 		Endpoint: oauth2.Endpoint{
-			TokenURL: tokenURL.String(),
+			TokenURL:  tokenURL.String(),
+			AuthStyle: oauth2.AuthStyleInHeader,
 		},
 	}
 	a.oauthConfig = c

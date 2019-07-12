@@ -257,14 +257,14 @@ func testNew(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		when("success", func() {
-		  it.Before(func() {
-        // Token retrieval is done as part of validateAuthorizationCode
+			it.Before(func() {
+				// Token retrieval is done as part of validateAuthorizationCode
 				// validateAuthorizationCode is called two times on construction
-        // AuthStyle is set to AuthStyleAutoDetect, failed token requests are retried
+				// AuthStyle is set to AuthStyleInHeader, failed token requests are not retried
 				// Because the first token reqest succeeds, later token attempts are skipped
-        // 1 token request, 1 attempt each => 1 request
+				// 1 token request, 1 attempt each => 1 request
 				stubTokenSuccess("client-id", "client-secret", "auth-code", uaa.OpaqueToken)
-		  })
+			})
 
 			it("returns an API with a TargetURL", func() {
 				api, err := uaa.NewWithAuthorizationCode(s.URL(), "", "client-id", "client-secret", "auth-code", uaa.OpaqueToken, false)
@@ -290,16 +290,14 @@ func testNew(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		when("created with an invalid auth code", func() {
-      it.Before(func() {
-        // Token retrieval is done as part of validateAuthorizationCode
+			it.Before(func() {
+				// Token retrieval is done as part of validateAuthorizationCode
 				// validateAuthorizationCode is called two times on construction
-        // AuthStyle is set to AuthStyleAutoDetect, failed token requests are retried
-        // 2 token requests, 2 attempts each => 4 requests
+				// AuthStyle is set to AuthStyleInHeader, failed token requests are not retried
+				// 2 token requests, 1 attempt each => 2 requests
 				stubTokenFailure("client-id", "client-secret", "", uaa.JSONWebToken)
 				stubTokenFailure("client-id", "client-secret", "", uaa.JSONWebToken)
-				stubTokenFailure("client-id", "client-secret", "", uaa.JSONWebToken)
-				stubTokenFailure("client-id", "client-secret", "", uaa.JSONWebToken)
-      })
+			})
 
 			it("returns an error", func() {
 				api, err := uaa.NewWithAuthorizationCode(s.URL(), "", "client-id", "client-secret", "", uaa.JSONWebToken, false)
@@ -309,16 +307,14 @@ func testNew(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		when("the token response is missing a token", func() {
-      it.Before(func() {
-        // Token retrieval is done as part of validateAuthorizationCode
+			it.Before(func() {
+				// Token retrieval is done as part of validateAuthorizationCode
 				// validateAuthorizationCode is called two times on construction
-        // AuthStyle is set to AuthStyleAutoDetect, failed token requests are retried
-        // 2 token requests, 2 attempts each => 4 requests
+				// AuthStyle is set to AuthStyleInHeader, failed token requests are not retried
+				// 2 token requests, 2 attempts each => 4 requests
 				stubMalformedTokenSuccess("client-id", "client-secret", "auth-code", uaa.OpaqueToken)
 				stubMalformedTokenSuccess("client-id", "client-secret", "auth-code", uaa.OpaqueToken)
-				stubMalformedTokenSuccess("client-id", "client-secret", "auth-code", uaa.OpaqueToken)
-				stubMalformedTokenSuccess("client-id", "client-secret", "auth-code", uaa.OpaqueToken)
-      })
+			})
 
 			it("returns an error", func() {
 				api, err := uaa.NewWithAuthorizationCode(s.URL(), "", "client-id", "client-secret", "auth-code", uaa.OpaqueToken, false)
@@ -328,16 +324,16 @@ func testNew(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		when("the UnauthenticatedClient is removed", func() {
-      it.Before(func() {
-        // Token retrieval is done as part of validateAuthorizationCode
+			it.Before(func() {
+				// Token retrieval is done as part of validateAuthorizationCode
 				// validateAuthorizationCode is called two times on construction
-        // AuthStyle is set to AuthStyleAutoDetect, failed token requests are retried
+				// AuthStyle is set to AuthStyleInHeader, failed token requests are not retried
 				// Because the first token reqest succeeds, later token attempts are skipped
-        // Then another token is explicitly requested
-        // 2 token requests, 1 attempt each => 2 requests
+				// Then another token is explicitly requested
+				// 2 token requests, 1 attempt each => 2 requests
 				stubTokenSuccess("client-id", "client-secret", "auth-code", uaa.OpaqueToken)
 				stubTokenSuccess("client-id", "client-secret", "auth-code", uaa.OpaqueToken)
-      })
+			})
 
 			it("Token() will set the UnauthenticatedClient to the default", func() {
 				api, err := uaa.NewWithAuthorizationCode(s.URL(), "", "client-id", "client-secret", "auth-code", uaa.OpaqueToken, false)
@@ -387,14 +383,14 @@ func testNew(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		when("success", func() {
-		  it.Before(func() {
-        // Token retrieval is done as part of validateRefreshToken
+			it.Before(func() {
+				// Token retrieval is done as part of validateRefreshToken
 				// validateRefreshToken is called two times on construction
-        // AuthStyle is set to AuthStyleAutoDetect, failed token requests are retried
+				// AuthStyle is set to AuthStyleInHeader, failed token requests are not retried
 				// Because the first token reqest succeeds, later token attempts are skipped
-        // 1 token request, 1 attempt each => 1 request
+				// 1 token request, 1 attempt each => 1 request
 				stubTokenSuccess("client-id", "client-secret", "refresh-token", uaa.JSONWebToken)
-		  })
+			})
 
 			it("returns an API with a TargetURL", func() {
 				api, err := uaa.NewWithRefreshToken(s.URL(), "", "client-id", "client-secret", "refresh-token", uaa.JSONWebToken, false)
@@ -429,16 +425,14 @@ func testNew(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		when("the token response is missing a token", func() {
-      it.Before(func() {
-        // Token retrieval is done as part of validateRefreshToken
+			it.Before(func() {
+				// Token retrieval is done as part of validateRefreshToken
 				// validateRefreshToken is called two times on construction
-        // AuthStyle is set to AuthStyleAutoDetect, failed token requests are retried
-        // 2 token requests, 2 attempts each => 4 requests
+				// AuthStyle is set to AuthStyleInHeader, failed token requests are not retried
+				// 2 token requests, 1 attempt each => 2 requests
 				stubMalformedTokenSuccess("client-id", "client-secret", "refresh-token", uaa.JSONWebToken)
 				stubMalformedTokenSuccess("client-id", "client-secret", "refresh-token", uaa.JSONWebToken)
-				stubMalformedTokenSuccess("client-id", "client-secret", "refresh-token", uaa.JSONWebToken)
-				stubMalformedTokenSuccess("client-id", "client-secret", "refresh-token", uaa.JSONWebToken)
-      })
+			})
 
 			it("returns an error", func() {
 				api, err := uaa.NewWithRefreshToken(s.URL(), "", "client-id", "client-secret", "refresh-token", uaa.JSONWebToken, false)
@@ -449,16 +443,16 @@ func testNew(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		when("the UnauthenticatedClient is removed", func() {
-      it.Before(func() {
-        // Token retrieval is done as part of validateRefreshToken
+			it.Before(func() {
+				// Token retrieval is done as part of validateRefreshToken
 				// validateRefreshToken is called two times on construction
-        // AuthStyle is set to AuthStyleAutoDetect, failed token requests are retried
+				// AuthStyle is set to AuthStyleInHeader, failed token requests are not retried
 				// Because the first token reqest succeeds, later token attempts are skipped
-        // Then another token is explicitly requested
-        // 2 token requests, 1 attempt each => 2 requests
+				// Then another token is explicitly requested
+				// 2 token requests, 1 attempt each => 2 requests
 				stubTokenSuccess("client-id", "client-secret", "refresh-token", uaa.JSONWebToken)
 				stubTokenSuccess("client-id", "client-secret", "refresh-token", uaa.JSONWebToken)
-      })
+			})
 
 			it("Token() will set the UnauthenticatedClient to the default", func() {
 				api, err := uaa.NewWithRefreshToken(s.URL(), "", "client-id", "client-secret", "refresh-token", uaa.JSONWebToken, false)
