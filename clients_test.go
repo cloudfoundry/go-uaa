@@ -9,6 +9,7 @@ import (
 
 	uaa "github.com/cloudfoundry-community/go-uaa"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/ghttp"
 	"github.com/sclevine/spec"
 )
 
@@ -50,6 +51,93 @@ const testClientJSON string = `{"client_id": "00000000-0000-0000-0000-0000000000
 func testClientExtra(t *testing.T, when spec.G, it spec.S) {
 	it.Before(func() {
 		RegisterTestingT(t)
+	})
+
+	when("GetClient()", func() {
+		var (
+			server *ghttp.Server
+			a      *uaa.API
+		)
+
+		it.Before(func() {
+			server = ghttp.NewServer()
+
+			c := &http.Client{Transport: http.DefaultTransport}
+			u, _ := url.Parse(server.URL())
+			a = &uaa.API{
+				TargetURL:             u,
+				AuthenticatedClient:   c,
+				UnauthenticatedClient: c,
+			}
+		})
+
+		it.After(func() {
+			if server != nil {
+				server.Close()
+			}
+		})
+
+		when("the client returned from the server contains an autoapprove value that is a boolean", func() {
+		  response := `{
+      	"scope" : [ "clients.read", "clients.write" ],
+      	"client_id" : "00000000-0000-0000-0000-000000000001",
+      	"resource_ids" : [ "none" ],
+      	"authorized_grant_types" : [ "client_credentials" ],
+      	"redirect_uri" : [ "http://ant.path.wildcard/**/passback/*", "http://test1.com" ],
+      	"autoapprove" : true,
+      	"authorities" : [ "clients.read", "clients.write" ],
+      	"token_salt" : "1SztLL",
+      	"allowedproviders" : [ "uaa", "ldap", "my-saml-provider" ],
+      	"name" : "My Client Name",
+      	"lastModified" : 1502816030525,
+      	"required_user_groups" : [ ]
+      }`
+
+			it.Before(func() {
+				server.AppendHandlers(ghttp.CombineHandlers(
+					ghttp.VerifyRequest("GET", uaa.ClientsEndpoint + "/00000000-0000-0000-0000-000000000001"),
+					ghttp.VerifyHeaderKV("Accept", "application/json"),
+					ghttp.RespondWith(http.StatusOK, response),
+				))
+			})
+
+			it("decodes the autoapprove value", func() {
+				client, err := a.GetClient("00000000-0000-0000-0000-000000000001")
+				Expect(err).NotTo(HaveOccurred())
+				Expect(client.AutoApprove()).To(Equal([]string{"true"}))
+			})
+		})
+
+		when("the client returned from the server contains an autoapprove value that is a string", func() {
+		  response := `{
+      	"scope" : [ "clients.read", "clients.write" ],
+      	"client_id" : "00000000-0000-0000-0000-000000000001",
+      	"resource_ids" : [ "none" ],
+      	"authorized_grant_types" : [ "client_credentials" ],
+      	"redirect_uri" : [ "http://ant.path.wildcard/**/passback/*", "http://test1.com" ],
+      	"autoapprove" : "scope",
+      	"authorities" : [ "clients.read", "clients.write" ],
+      	"token_salt" : "1SztLL",
+      	"allowedproviders" : [ "uaa", "ldap", "my-saml-provider" ],
+      	"name" : "My Client Name",
+      	"lastModified" : 1502816030525,
+      	"required_user_groups" : [ ]
+      }`
+
+			it.Before(func() {
+				server.AppendHandlers(ghttp.CombineHandlers(
+					ghttp.VerifyRequest("GET", uaa.ClientsEndpoint + "/00000000-0000-0000-0000-000000000001"),
+					ghttp.VerifyHeaderKV("Accept", "application/json"),
+					ghttp.RespondWith(http.StatusOK, response),
+				))
+			})
+
+			it("decodes the autoapprove value", func() {
+				client, err := a.GetClient("00000000-0000-0000-0000-000000000001")
+				Expect(err).NotTo(HaveOccurred())
+				Expect(client.AutoApprove()).To(Equal([]string{"scope"}))
+			})
+		})
 	})
 
 	when("Client.Validate()", func() {
