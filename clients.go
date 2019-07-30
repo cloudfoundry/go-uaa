@@ -123,10 +123,6 @@ func (c *Client) Validate() error {
 		return err
 	}
 
-	if err := requireClientSecretForGrantType(c, PASSWORD); err != nil {
-		return err
-	}
-
 	if err := requireClientSecretForGrantType(c, CLIENTCREDENTIALS); err != nil {
 		return err
 	}

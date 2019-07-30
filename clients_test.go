@@ -244,15 +244,6 @@ func testClientExtra(t *testing.T, when spec.G, it spec.S) {
 				Expect(err).NotTo(BeNil())
 				Expect(err.Error()).To(Equal("client_id must be specified in the client definition"))
 			})
-
-			it("requires client_secret", func() {
-				client := uaa.Client{
-					ClientID:             "myclient",
-					AuthorizedGrantTypes: []string{"password"},
-				}
-				err := client.Validate()
-				Expect(err.Error()).To(Equal("client_secret must be specified for password grant type"))
-			})
 		})
 	})
 
