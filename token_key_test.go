@@ -81,7 +81,7 @@ func testTokenKey(t *testing.T, when spec.G, it spec.S) {
 
 		_, err := a.TokenKey()
 		Expect(err).To(HaveOccurred())
-		Expect(err.Error()).To(ContainSubstring("An unknown error occurred while calling"))
+		Expect(err.Error()).To(ContainSubstring("An error occurred while calling"))
 	})
 
 	it("returns helpful error when /token_key response can't be parsed", func() {

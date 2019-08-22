@@ -113,7 +113,7 @@ func testInfo(t *testing.T, when spec.G, it spec.S) {
 		it("returns a helpful error", func() {
 			_, err := a.GetInfo()
 			Expect(err).NotTo(BeNil())
-			Expect(err.Error()).To(ContainSubstring("An unknown error occurred while calling"))
+			Expect(err.Error()).To(ContainSubstring("An error occurred while calling"))
 		})
 	})
 

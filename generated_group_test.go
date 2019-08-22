@@ -75,7 +75,7 @@ func testGroup(t *testing.T, when spec.G, it spec.S) {
 				group, err := a.GetGroup("00000000-0000-0000-0000-000000000001")
 				Expect(err).To(HaveOccurred())
 				Expect(group).To(BeNil())
-				Expect(err.Error()).To(ContainSubstring("An unknown error occurred while calling"))
+				Expect(err.Error()).To(ContainSubstring("An error occurred while calling"))
 			})
 		})
 

@@ -156,7 +156,7 @@ func testUsers(t *testing.T, when spec.G, it spec.S) {
 
 				_, err := a.GetUserByUsername("marcus", "uaa", "")
 				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(ContainSubstring("An unknown error"))
+				Expect(err.Error()).To(ContainSubstring("An error"))
 			})
 
 			it("returns an error if no results are found", func() {
@@ -214,7 +214,7 @@ func testUsers(t *testing.T, when spec.G, it spec.S) {
 				})
 				_, err := a.GetUserByUsername("marcus", "", "")
 				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(ContainSubstring("An unknown error"))
+				Expect(err.Error()).To(ContainSubstring("An error"))
 			})
 
 			it("returns an error when no users are found", func() {
@@ -465,7 +465,7 @@ func testUsers(t *testing.T, when spec.G, it spec.S) {
 			})
 			err := a.ActivateUser("fb5f32e1-5cb3-49e6-93df-6df9c8c8bd7", 0)
 			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("An unknown error occurred while calling"))
+			Expect(err.Error()).To(ContainSubstring("An error occurred while calling"))
 			Expect(called).To(Equal(1))
 		})
 	})
@@ -508,7 +508,7 @@ func testUsers(t *testing.T, when spec.G, it spec.S) {
 			})
 			err := a.DeactivateUser("fb5f32e1-5cb3-49e6-93df-6df9c8c8bd7", 0)
 			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("An unknown error occurred while calling"))
+			Expect(err.Error()).To(ContainSubstring("An error occurred while calling"))
 			Expect(called).To(Equal(1))
 		})
 	})

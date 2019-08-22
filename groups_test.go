@@ -143,7 +143,7 @@ func testGroupsExtra(t *testing.T, when spec.G, it spec.S) {
 
 				_, err := a.GetGroupByName("uaa.admin", "")
 				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(ContainSubstring("An unknown error"))
+				Expect(err.Error()).To(ContainSubstring("An error"))
 			})
 
 			it("returns an error when no groups are found", func() {

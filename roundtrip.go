@@ -86,10 +86,13 @@ func (a *API) doAndRead(req *http.Request, needsAuthentication bool) ([]byte, er
 		if a.Verbose {
 			fmt.Printf("%v\n\n", err)
 		}
-		return nil, unknownError()
+		return nil, requestError(req.URL.String())
 	}
 
 	if !is2XX(resp.StatusCode) {
+		if len(bytes) > 0 {
+			return nil, requestErrorWithBody(req.URL.String(), bytes)
+		}
 		return nil, requestError(req.URL.String())
 	}
 	return bytes, nil
