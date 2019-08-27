@@ -5,11 +5,12 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"reflect"
 	"testing"
 	"time"
 
-	uaa "github.com/cloudfoundry-community/go-uaa"
+	"github.com/cloudfoundry-community/go-uaa"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/ghttp"
 	"github.com/sclevine/spec"
@@ -218,6 +219,7 @@ func testNew(t *testing.T, when spec.G, it spec.S) {
 
 	when("NewWithAuthorizationCode", func() {
 		var s *ghttp.Server
+		redirectUrl, _ := url.ParseRequestURI("https://example.net")
 
 		stubTokenRequest := func(clientId string, clientSecret string, authCode string, tokenFormat uaa.TokenFormat, response http.HandlerFunc) {
 			s.AppendHandlers(ghttp.CombineHandlers(
@@ -267,14 +269,14 @@ func testNew(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			it("returns an API with a TargetURL", func() {
-				api, err := uaa.NewWithAuthorizationCode(s.URL(), "", "client-id", "client-secret", "auth-code", uaa.OpaqueToken, false)
+				api, err := uaa.NewWithAuthorizationCode(s.URL(), "", "client-id", "client-secret", "auth-code", uaa.OpaqueToken, false, redirectUrl)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(api).NotTo(BeNil())
 				Expect(api.TargetURL.String()).To(Equal(s.URL()))
 			})
 
 			it("returns an API with an HTTPClient", func() {
-				api, err := uaa.NewWithAuthorizationCode(s.URL(), "", "client-id", "client-secret", "auth-code", uaa.OpaqueToken, false)
+				api, err := uaa.NewWithAuthorizationCode(s.URL(), "", "client-id", "client-secret", "auth-code", uaa.OpaqueToken, false, redirectUrl)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(api).NotTo(BeNil())
 				Expect(api.AuthenticatedClient).NotTo(BeNil())
@@ -283,7 +285,7 @@ func testNew(t *testing.T, when spec.G, it spec.S) {
 
 		when("invalid target url", func() {
 			it("returns an error", func() {
-				api, err := uaa.NewWithAuthorizationCode("(*#&^@%$&%)", "client-id", "client-secret", "auth-code", "", uaa.OpaqueToken, false)
+				api, err := uaa.NewWithAuthorizationCode("(*#&^@%$&%)", "client-id", "client-secret", "auth-code", "", uaa.OpaqueToken, false, redirectUrl)
 				Expect(err).To(HaveOccurred())
 				Expect(api).To(BeNil())
 			})
@@ -300,7 +302,7 @@ func testNew(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			it("returns an error", func() {
-				api, err := uaa.NewWithAuthorizationCode(s.URL(), "", "client-id", "client-secret", "", uaa.JSONWebToken, false)
+				api, err := uaa.NewWithAuthorizationCode(s.URL(), "", "client-id", "client-secret", "", uaa.JSONWebToken, false, redirectUrl)
 				Expect(err).To(HaveOccurred())
 				Expect(api).To(BeNil())
 			})
@@ -317,7 +319,7 @@ func testNew(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			it("returns an error", func() {
-				api, err := uaa.NewWithAuthorizationCode(s.URL(), "", "client-id", "client-secret", "auth-code", uaa.OpaqueToken, false)
+				api, err := uaa.NewWithAuthorizationCode(s.URL(), "", "client-id", "client-secret", "auth-code", uaa.OpaqueToken, false, redirectUrl)
 				Expect(err).To(HaveOccurred())
 				Expect(api).To(BeNil())
 			})
@@ -336,7 +338,7 @@ func testNew(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			it("Token() will set the UnauthenticatedClient to the default", func() {
-				api, err := uaa.NewWithAuthorizationCode(s.URL(), "", "client-id", "client-secret", "auth-code", uaa.OpaqueToken, false)
+				api, err := uaa.NewWithAuthorizationCode(s.URL(), "", "client-id", "client-secret", "auth-code", uaa.OpaqueToken, false, redirectUrl)
 				Expect(err).To(BeNil())
 				Expect(api).NotTo(BeNil())
 				api.UnauthenticatedClient = nil

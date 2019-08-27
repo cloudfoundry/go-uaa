@@ -19,6 +19,7 @@ type API struct {
 	AuthenticatedClient       *http.Client
 	UnauthenticatedClient     *http.Client
 	TargetURL                 *url.URL
+	redirectURL               *url.URL
 	skipSSLValidation         bool
 	Verbose                   bool
 	ZoneID                    string
@@ -304,8 +305,8 @@ func (a *API) Token(ctx context.Context) (*oauth2.Token, error) {
 
 // NewWithAuthorizationCode builds an API that uses the authorization code
 // grant to get a token for use with the UAA API.
-func NewWithAuthorizationCode(target string, zoneID string, clientID string, clientSecret string, authorizationCode string, tokenFormat TokenFormat, skipSSLValidation bool) (*API, error) {
-	a := New(target, zoneID).WithSkipSSLValidation(skipSSLValidation).WithAuthorizationCode(clientID, clientSecret, authorizationCode, tokenFormat)
+func NewWithAuthorizationCode(target string, zoneID string, clientID string, clientSecret string, authorizationCode string, tokenFormat TokenFormat, skipSSLValidation bool, redirectURL *url.URL) (*API, error) {
+	a := New(target, zoneID).WithSkipSSLValidation(skipSSLValidation).WithAuthorizationCode(clientID, clientSecret, authorizationCode, tokenFormat, redirectURL)
 	err := a.Validate()
 	if err != nil {
 		return nil, err
@@ -313,12 +314,13 @@ func NewWithAuthorizationCode(target string, zoneID string, clientID string, cli
 	return a, err
 }
 
-func (a *API) WithAuthorizationCode(clientID string, clientSecret string, authorizationCode string, tokenFormat TokenFormat) *API {
+func (a *API) WithAuthorizationCode(clientID string, clientSecret string, authorizationCode string, tokenFormat TokenFormat, redirectURL *url.URL) *API {
 	a.mode = authorizationcode
 	a.clientID = clientID
 	a.clientSecret = clientSecret
 	a.authorizationCode = authorizationCode
 	a.tokenFormat = tokenFormat
+	a.redirectURL = redirectURL
 	_ = a.Validate()
 	return a
 }
@@ -336,6 +338,7 @@ func (a *API) validateAuthorizationCode() error {
 			TokenURL:  tokenURL.String(),
 			AuthStyle: oauth2.AuthStyleInHeader,
 		},
+		RedirectURL: a.redirectURL.String(),
 	}
 	a.oauthConfig = c
 	if a.UnauthenticatedClient == nil {
