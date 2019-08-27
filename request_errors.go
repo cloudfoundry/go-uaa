@@ -3,6 +3,7 @@ package uaa
 import (
 	"fmt"
 	"github.com/pkg/errors"
+	"golang.org/x/oauth2"
 )
 
 type RequestError struct {
@@ -12,6 +13,15 @@ type RequestError struct {
 
 func (r RequestError) Error() string {
 	return fmt.Sprintf("An error occurred while calling %s", r.Url)
+}
+
+func requestErrorFromOauthError(err error) error {
+	oauthErrorResponse, isRetrieveError := err.(*oauth2.RetrieveError)
+	if isRetrieveError {
+		tokenUrl := oauthErrorResponse.Response.Request.URL.String()
+		return requestErrorWithBody(tokenUrl, oauthErrorResponse.Body)
+	}
+	return err
 }
 
 func requestErrorWithBody(url string, body []byte) error {

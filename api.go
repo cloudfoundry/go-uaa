@@ -4,12 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/http"
-	"net/url"
-
 	pc "github.com/cloudfoundry-community/go-uaa/passwordcredentials"
 	"golang.org/x/oauth2"
 	cc "golang.org/x/oauth2/clientcredentials"
+	"net/http"
+	"net/url"
 )
 
 //go:generate go run ./generator/generator.go
@@ -349,7 +348,7 @@ func (a *API) validateAuthorizationCode() error {
 	if !a.token.Valid() {
 		t, err := a.Token(context.Background())
 		if err != nil {
-			return err
+			return requestErrorFromOauthError(err)
 		}
 		a.token = t
 	}
