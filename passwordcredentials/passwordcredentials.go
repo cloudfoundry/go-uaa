@@ -52,7 +52,10 @@ func retrieveToken(ctx context.Context, ClientID, ClientSecret, TokenURL string,
 		return nil, fmt.Errorf("oauth2: cannot fetch token: %v", err)
 	}
 	if code := r.StatusCode; code < 200 || code > 299 {
-		return nil, fmt.Errorf("oauth2: cannot fetch token: %v\nResponse: %s", r.Status, body)
+		return nil, &oauth2.RetrieveError{
+			Response: r,
+			Body:     body,
+		}
 	}
 
 	var token *internalToken

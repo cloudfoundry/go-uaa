@@ -213,7 +213,10 @@ func (a *API) validatePasswordCredentials() error {
 		EndpointParams: v,
 	}
 	a.passwordCredentialsConfig = c
-	a.AuthenticatedClient = c.Client(context.WithValue(context.Background(), oauth2.HTTPClient, a.UnauthenticatedClient))
+	a.AuthenticatedClient = c.Client(context.WithValue(
+		context.Background(),
+		oauth2.HTTPClient,
+		a.UnauthenticatedClient))
 	return a.ensureTransports()
 }
 
