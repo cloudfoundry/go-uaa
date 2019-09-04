@@ -14,24 +14,10 @@ import (
 	"strings"
 	"time"
 
-	"golang.org/x/net/context"
+	"context"
+
 	"golang.org/x/oauth2"
 )
-
-// tokenFromInternal maps an *internal.Token struct into
-// an *oauth2.Token struct.
-func tokenFromInternal(t *internalToken) *oauth2.Token {
-	if t == nil {
-		return nil
-	}
-	tk := &oauth2.Token{
-		AccessToken:  t.AccessToken,
-		TokenType:    t.TokenType,
-		RefreshToken: t.RefreshToken,
-		Expiry:       t.Expiry,
-	}
-	return tk.WithExtra(t.Raw)
-}
 
 func retrieveToken(ctx context.Context, ClientID, ClientSecret, TokenURL string, v url.Values) (*oauth2.Token, error) {
 	hc := ContextClient(ctx)
@@ -46,8 +32,8 @@ func retrieveToken(ctx context.Context, ClientID, ClientSecret, TokenURL string,
 	if err != nil {
 		return nil, err
 	}
-	defer r.Body.Close()
 	body, err := ioutil.ReadAll(io.LimitReader(r.Body, 1<<20))
+	r.Body.Close()
 	if err != nil {
 		return nil, fmt.Errorf("oauth2: cannot fetch token: %v", err)
 	}
