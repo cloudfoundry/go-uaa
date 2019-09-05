@@ -295,12 +295,15 @@ func (a *API) Token(ctx context.Context) (*oauth2.Token, error) {
 		if a.UnauthenticatedClient == nil {
 			a = a.WithClient(defaultClient())
 		}
-		ctx := context.WithValue(context.Background(), oauth2.HTTPClient, a.UnauthenticatedClient)
 		tokenSource := a.oauthConfig.TokenSource(ctx, &oauth2.Token{
 			RefreshToken: a.refreshToken,
 		})
 
-		return tokenSource.Token()
+		token, err := tokenSource.Token()
+		return token, requestErrorFromOauthError(err)
+	case passwordcredentials:
+		token, err := a.passwordCredentialsConfig.TokenSource(ctx).Token()
+		return token, requestErrorFromOauthError(err)
 	}
 	return nil, errors.New("your configuration provides no way for go-uaa to get a token")
 }
@@ -368,7 +371,7 @@ func NewWithRefreshToken(target string, zoneID string, clientID string, clientSe
 	if err != nil {
 		return nil, err
 	}
-	return a, err
+	return a, nil
 }
 
 func (a *API) WithRefreshToken(clientID string, clientSecret string, refreshToken string, tokenFormat TokenFormat) *API {
