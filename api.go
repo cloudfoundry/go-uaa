@@ -4,11 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
+	"net/url"
+
 	pc "github.com/cloudfoundry-community/go-uaa/passwordcredentials"
 	"golang.org/x/oauth2"
 	cc "golang.org/x/oauth2/clientcredentials"
-	"net/http"
-	"net/url"
 )
 
 //go:generate go run ./generator/generator.go
@@ -265,6 +266,7 @@ func (a *API) validateToken() error {
 }
 
 func (a *API) Token(ctx context.Context) (*oauth2.Token, error) {
+	ctx = context.WithValue(ctx, oauth2.HTTPClient, a.UnauthenticatedClient)
 	switch a.mode {
 	case token:
 		if !a.token.Valid() {
@@ -283,7 +285,6 @@ func (a *API) Token(ctx context.Context) (*oauth2.Token, error) {
 		if a.UnauthenticatedClient == nil {
 			a = a.WithClient(defaultClient())
 		}
-		ctx := context.WithValue(ctx, oauth2.HTTPClient, a.UnauthenticatedClient)
 		tokenFormatParam := oauth2.SetAuthURLParam("token_format", a.tokenFormat.String())
 		responseTypeParam := oauth2.SetAuthURLParam("response_type", "token")
 
@@ -295,6 +296,7 @@ func (a *API) Token(ctx context.Context) (*oauth2.Token, error) {
 		if a.UnauthenticatedClient == nil {
 			a = a.WithClient(defaultClient())
 		}
+
 		tokenSource := a.oauthConfig.TokenSource(ctx, &oauth2.Token{
 			RefreshToken: a.refreshToken,
 		})
