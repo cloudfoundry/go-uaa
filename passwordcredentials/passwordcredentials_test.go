@@ -5,6 +5,7 @@
 package passwordcredentials
 
 import (
+	"context"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -24,14 +25,6 @@ func newConf(url string) *Config {
 			TokenURL: url + "/token",
 		},
 	}
-}
-
-type mockTransport struct {
-	rt func(req *http.Request) (resp *http.Response, err error)
-}
-
-func (t *mockTransport) RoundTrip(req *http.Request) (resp *http.Response, err error) {
-	return t.rt(req)
 }
 
 func TestTokenRequest(t *testing.T) {
@@ -58,11 +51,14 @@ func TestTokenRequest(t *testing.T) {
 			t.Errorf("payload = %q; want %q", string(body), want)
 		}
 		w.Header().Set("Content-Type", "application/x-www-form-urlencoded")
-		w.Write([]byte("access_token=90d64460d14870c08c81352a05dedd3465940a7c&token_type=bearer"))
+		_, err = w.Write([]byte("access_token=90d64460d14870c08c81352a05dedd3465940a7c&token_type=bearer"))
+		if err != nil {
+			t.Errorf("failed writing response: %s.", err)
+		}
 	}))
 	defer ts.Close()
 	conf := newConf(ts.URL)
-	tok, err := conf.TokenSource(oauth2.NoContext).Token()
+	tok, err := conf.TokenSource(context.Background()).Token()
 	if err != nil {
 		t.Error(err)
 	}
@@ -97,6 +93,6 @@ func TestTokenRefreshRequest(t *testing.T) {
 	}))
 	defer ts.Close()
 	conf := newConf(ts.URL)
-	c := conf.Client(oauth2.NoContext)
-	c.Get(ts.URL + "/somethingelse")
+	c := conf.Client(context.Background())
+	_, _ = c.Get(ts.URL + "/somethingelse")
 }

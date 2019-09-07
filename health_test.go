@@ -46,7 +46,8 @@ func testIsHealthy(t *testing.T, when spec.G, it spec.S) {
 		handler = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 			Expect(req.URL.Path).To(Equal("/healthz"))
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte("ok"))
+			_, err := w.Write([]byte("ok"))
+			Expect(err).NotTo(HaveOccurred())
 		})
 
 		status, err := a.IsHealthy()
@@ -58,7 +59,8 @@ func testIsHealthy(t *testing.T, when spec.G, it spec.S) {
 		handler = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 			Expect(req.URL.Path).To(Equal("/healthz"))
 			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte("ok"))
+			_, err := w.Write([]byte("ok"))
+			Expect(err).NotTo(HaveOccurred())
 		})
 		status, err := a.IsHealthy()
 		Expect(status).To(BeFalse())

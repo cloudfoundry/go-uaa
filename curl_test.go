@@ -50,7 +50,8 @@ func testCurl(t *testing.T, when spec.G, it spec.S) {
 			Expect(req.URL.Path).To(Equal("/Users/00000000-0000-0000-0000-000000000001"))
 			Expect(req.Method).To(Equal(http.MethodGet))
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(userResponse))
+			_, err := w.Write([]byte(userResponse))
+			Expect(err).NotTo(HaveOccurred())
 		})
 
 		_, resBody, err := a.Curl("/Users/00000000-0000-0000-0000-000000000001", "GET", "", []string{"Accept: application/json"})
@@ -78,7 +79,8 @@ func testCurl(t *testing.T, when spec.G, it spec.S) {
 			body, _ := ioutil.ReadAll(req.Body)
 			Expect(body).To(MatchJSON(reqBodyBytes))
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(userResponse))
+			_, err := w.Write([]byte(userResponse))
+			Expect(err).NotTo(HaveOccurred())
 		})
 
 		Expect(err).NotTo(HaveOccurred())

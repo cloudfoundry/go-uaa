@@ -78,7 +78,8 @@ func testInfo(t *testing.T, when spec.G, it spec.S) {
 				Expect(req.Method).To(Equal(http.MethodGet))
 				Expect(req.URL.Path).To(Equal("/info"))
 				Expect(req.Header.Get("Accept")).To(Equal("application/json"))
-				w.Write([]byte(InfoResponseJSON))
+				_, err := w.Write([]byte(InfoResponseJSON))
+				Expect(err).NotTo(HaveOccurred())
 			})
 		})
 
@@ -123,7 +124,8 @@ func testInfo(t *testing.T, when spec.G, it spec.S) {
 				Expect(req.Method).To(Equal(http.MethodGet))
 				Expect(req.URL.Path).To(Equal("/info"))
 				Expect(req.Header.Get("Accept")).To(Equal("application/json"))
-				w.Write([]byte("{unparsable-json-response}"))
+				_, err := w.Write([]byte("{unparsable-json-response}"))
+				Expect(err).NotTo(HaveOccurred())
 			})
 		})
 

@@ -114,7 +114,7 @@ func (a *API) ensureTransports() error {
 	}
 	a.ensureTransport(a.UnauthenticatedClient.Transport)
 	if a.AuthenticatedClient == nil {
-		return errors.New("AuthenticatedClient is nil")
+		return errors.New("AuthenticatedClient is nil; please ensure you pass an Option (e.g. WithClientCredentials, WithPasswordCredentials, WithAuthorizationCode, WithRefreshToken, WithToken) to New(), or manually set AuthenticatedClient")
 	}
 	a.ensureTransport(a.AuthenticatedClient.Transport)
 	return nil
