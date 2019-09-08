@@ -23,14 +23,14 @@ func (a *API) Curl(path string, method string, data string, headers []string) (s
 		return "", "", err
 	}
 
-	if a.Verbose {
+	if a.verbose {
 		logRequest(req)
 	}
 
-	a.ensureTransport(a.AuthenticatedClient.Transport)
-	resp, err := a.AuthenticatedClient.Do(req)
+	a.ensureTransport(a.Client.Transport)
+	resp, err := a.Client.Do(req)
 	if err != nil {
-		if a.Verbose {
+		if a.verbose {
 			fmt.Printf("%v\n\n", err)
 		}
 		return "", "", err
@@ -41,12 +41,12 @@ func (a *API) Curl(path string, method string, data string, headers []string) (s
 	resHeaders := string(headerBytes)
 
 	bytes, err := ioutil.ReadAll(resp.Body)
-	if err != nil && a.Verbose {
+	if err != nil && a.verbose {
 		fmt.Printf("%v\n\n", err)
 	}
 	resBody := string(bytes)
 
-	if a.Verbose {
+	if a.verbose {
 		logResponse(resp)
 	}
 

@@ -44,13 +44,17 @@ func (a *API) doJSONWithHeaders(method string, url *url.URL, headers map[string]
 
 func (a *API) doAndRead(req *http.Request, needsAuthentication bool) ([]byte, error) {
 	req.Header.Add("Accept", "application/json")
-	req.Header.Add("X-Identity-Zone-Id", a.ZoneID)
-	req.Header.Set("User-Agent", a.UserAgent)
+	req.Header.Add("X-Identity-Zone-Id", a.zoneID)
+	userAgent := a.userAgent
+	if userAgent == "" {
+		userAgent = "go-uaa"
+	}
+	req.Header.Set("User-Agent", userAgent)
 	switch req.Method {
 	case http.MethodPut, http.MethodPost, http.MethodPatch:
 		req.Header.Add("Content-Type", "application/json")
 	}
-	if a.Verbose {
+	if a.verbose {
 		logRequest(req)
 	}
 	a.ensureTimeout()
@@ -59,31 +63,31 @@ func (a *API) doAndRead(req *http.Request, needsAuthentication bool) ([]byte, er
 		err  error
 	)
 	if needsAuthentication {
-		if a.AuthenticatedClient == nil {
+		if a.Client == nil {
 			return nil, errors.New("doAndRead: the HTTPClient cannot be nil")
 		}
-		a.ensureTransport(a.AuthenticatedClient.Transport)
-		resp, err = a.AuthenticatedClient.Do(req)
+		a.ensureTransport(a.Client.Transport)
+		resp, err = a.Client.Do(req)
 	} else {
-		a.ensureTransport(a.UnauthenticatedClient.Transport)
-		resp, err = a.UnauthenticatedClient.Do(req)
+		a.ensureTransport(a.unauthenticatedClient.Transport)
+		resp, err = a.unauthenticatedClient.Do(req)
 	}
 
 	if err != nil {
-		if a.Verbose {
+		if a.verbose {
 			fmt.Printf("%v\n\n", err)
 		}
 
 		return nil, requestError(req.URL.String())
 	}
 
-	if a.Verbose {
+	if a.verbose {
 		logResponse(resp)
 	}
 
 	bytes, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		if a.Verbose {
+		if a.verbose {
 			fmt.Printf("%v\n\n", err)
 		}
 		return nil, requestError(req.URL.String())
@@ -99,25 +103,13 @@ func (a *API) doAndRead(req *http.Request, needsAuthentication bool) ([]byte, er
 }
 
 func (a *API) ensureTimeout() {
-	if a.AuthenticatedClient != nil && a.AuthenticatedClient.Timeout == 0 {
-		a.AuthenticatedClient.Timeout = time.Second * 120
+	if a.Client != nil && a.Client.Timeout == 0 {
+		a.Client.Timeout = time.Second * 120
 	}
 
-	if a.UnauthenticatedClient != nil && a.UnauthenticatedClient.Timeout == 0 {
-		a.UnauthenticatedClient.Timeout = time.Second * 120
+	if a.unauthenticatedClient != nil && a.unauthenticatedClient.Timeout == 0 {
+		a.unauthenticatedClient.Timeout = time.Second * 120
 	}
-}
-
-func (a *API) ensureTransports() error {
-	if a.UnauthenticatedClient == nil {
-		return errors.New("UnauthenticatedClient is nil")
-	}
-	a.ensureTransport(a.UnauthenticatedClient.Transport)
-	if a.AuthenticatedClient == nil {
-		return errors.New("AuthenticatedClient is nil; please ensure you pass an Option (e.g. WithClientCredentials, WithPasswordCredentials, WithAuthorizationCode, WithRefreshToken, WithToken) to New(), or manually set AuthenticatedClient")
-	}
-	a.ensureTransport(a.AuthenticatedClient.Transport)
-	return nil
 }
 
 func (a *API) ensureTransport(c http.RoundTripper) {

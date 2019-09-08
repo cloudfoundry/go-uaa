@@ -16,14 +16,14 @@ import (
 
 // API is a client to the UAA API.
 type API struct {
-	AuthenticatedClient       *http.Client
-	UnauthenticatedClient     *http.Client
+	Client                    *http.Client
+	unauthenticatedClient     *http.Client
 	TargetURL                 *url.URL
 	redirectURL               *url.URL
 	skipSSLValidation         bool
-	Verbose                   bool
-	ZoneID                    string
-	UserAgent                 string
+	verbose                   bool
+	zoneID                    string
+	userAgent                 string
 	token                     *oauth2.Token
 	target                    string
 	mode                      mode
@@ -77,28 +77,34 @@ type AuthenticationOption interface {
 	ApplyAuthentication(a *API)
 }
 
-func New(target string, zoneID string, authOpt AuthenticationOption, opts ...Option) (*API, error) {
+func New(target string, authOpt AuthenticationOption, opts ...Option) (*API, error) {
 	a := &API{
-		ZoneID:    zoneID,
-		UserAgent: "go-uaa",
-		target:    target,
-		mode:      custom,
+		target: target,
+		mode:   custom,
 	}
 	authOpt.ApplyAuthentication(a)
-	defaultClientOption := WithClient(&http.Client{Transport: http.DefaultTransport})
-	opts = append([]Option{defaultClientOption}, opts...)
+	defaultClientOption := WithClient(defaultClient())
+	defaultUserAgentOption := WithUserAgent("go-uaa")
+	opts = append([]Option{defaultClientOption, defaultUserAgentOption}, opts...)
 	for _, option := range opts {
 		option.Apply(a)
 	}
-	err := a.Validate()
+	err := a.validate()
 	if err != nil {
 		return nil, err
 	}
 	return a, nil
 }
 
+func defaultClient() *http.Client {
+	return &http.Client{Transport: http.DefaultTransport}
+}
+
 func (a *API) Token(ctx context.Context) (*oauth2.Token, error) {
-	ctx = context.WithValue(ctx, oauth2.HTTPClient, a.UnauthenticatedClient)
+	if _, ok := ctx.Value(oauth2.HTTPClient).(*http.Client); !ok {
+		ctx = context.WithValue(ctx, oauth2.HTTPClient, defaultClient())
+	}
+
 	switch a.mode {
 	case token:
 		if !a.token.Valid() {
@@ -136,7 +142,7 @@ func (a *API) Token(ctx context.Context) (*oauth2.Token, error) {
 	return nil, errors.New("your configuration provides no way for go-uaa to get a token")
 }
 
-func (a *API) Validate() error {
+func (a *API) validate() error {
 	err := a.validateTarget()
 	if err != nil {
 		return err
@@ -145,18 +151,29 @@ func (a *API) Validate() error {
 	case token:
 		err = a.validateToken()
 	case clientcredentials:
-		err = a.validateClientCredentials()
+		a.validateClientCredentials()
 	case passwordcredentials:
-		err = a.validatePasswordCredentials()
+		a.validatePasswordCredentials()
 	case authorizationcode:
 		err = a.validateAuthorizationCode()
 	case refreshtoken:
 		err = a.validateRefreshToken()
+	case custom:
+		if a.Client == nil && a.unauthenticatedClient != nil {
+			a.Client = a.unauthenticatedClient
+		} else if a.Client == nil {
+			a.Client = defaultClient()
+		}
 	}
 	if err != nil {
 		return err
 	}
-	return a.ensureTransports()
+	if a.Client == nil {
+		return errors.New("Client is nil; please ensure you pass an AuthenticationOption (e.g. WithClientCredentials, WithPasswordCredentials, WithAuthorizationCode, WithRefreshToken, WithToken) to New(), or manually set Client")
+	}
+	a.ensureTransport(a.Client.Transport)
+	a.ensureTransport(a.unauthenticatedClient.Transport)
+	return nil
 }
 
 func (a *API) validateTarget() error {
@@ -183,7 +200,7 @@ func WithClient(client *http.Client) Option {
 }
 
 func (w *withClient) Apply(a *API) {
-	a.UnauthenticatedClient = w.client
+	a.unauthenticatedClient = w.client
 }
 
 type withSkipSSLValidation struct {
@@ -196,6 +213,42 @@ func WithSkipSSLValidation(skipSSLValidation bool) Option {
 
 func (w *withSkipSSLValidation) Apply(a *API) {
 	a.skipSSLValidation = w.skipSSLValidation
+}
+
+type withUserAgent struct {
+	userAgent string
+}
+
+func WithUserAgent(userAgent string) Option {
+	return &withUserAgent{userAgent: userAgent}
+}
+
+func (w *withUserAgent) Apply(a *API) {
+	a.userAgent = w.userAgent
+}
+
+type withZoneID struct {
+	zoneID string
+}
+
+func WithZoneID(zoneID string) Option {
+	return &withZoneID{zoneID: zoneID}
+}
+
+func (w *withZoneID) Apply(a *API) {
+	a.zoneID = w.zoneID
+}
+
+type withVerbosity struct {
+	verbose bool
+}
+
+func WithVerbosity(verbose bool) Option {
+	return &withVerbosity{verbose: verbose}
+}
+
+func (w *withVerbosity) Apply(a *API) {
+	a.verbose = w.verbose
 }
 
 type withClientCredentials struct {
@@ -215,11 +268,7 @@ func (w *withClientCredentials) ApplyAuthentication(a *API) {
 	a.tokenFormat = w.tokenFormat
 }
 
-func (a *API) validateClientCredentials() error {
-	err := a.validateTarget()
-	if err != nil {
-		return err
-	}
+func (a *API) validateClientCredentials() {
 	tokenURL := urlWithPath(*a.TargetURL, "/oauth/token")
 	v := url.Values{}
 	v.Add("token_format", a.tokenFormat.String())
@@ -231,8 +280,11 @@ func (a *API) validateClientCredentials() error {
 		AuthStyle:      oauth2.AuthStyleInHeader,
 	}
 	a.clientCredentialsConfig = c
-	a.AuthenticatedClient = c.Client(context.WithValue(context.Background(), oauth2.HTTPClient, a.UnauthenticatedClient))
-	return a.ensureTransports()
+	a.Client = c.Client(context.WithValue(
+		context.Background(),
+		oauth2.HTTPClient,
+		a.unauthenticatedClient,
+	))
 }
 
 type withPasswordCredentials struct {
@@ -262,11 +314,7 @@ func (w *withPasswordCredentials) ApplyAuthentication(a *API) {
 	a.tokenFormat = w.tokenFormat
 }
 
-func (a *API) validatePasswordCredentials() error {
-	err := a.validateTarget()
-	if err != nil {
-		return err
-	}
+func (a *API) validatePasswordCredentials() {
 	tokenURL := urlWithPath(*a.TargetURL, "/oauth/token")
 	v := url.Values{}
 	v.Add("token_format", a.tokenFormat.String())
@@ -281,11 +329,10 @@ func (a *API) validatePasswordCredentials() error {
 		EndpointParams: v,
 	}
 	a.passwordCredentialsConfig = c
-	a.AuthenticatedClient = c.Client(context.WithValue(
+	a.Client = c.Client(context.WithValue(
 		context.Background(),
 		oauth2.HTTPClient,
-		a.UnauthenticatedClient))
-	return a.ensureTransports()
+		a.unauthenticatedClient))
 }
 
 type withAuthorizationCode struct {
@@ -316,10 +363,6 @@ func (w *withAuthorizationCode) ApplyAuthentication(a *API) {
 }
 
 func (a *API) validateAuthorizationCode() error {
-	err := a.validateTarget()
-	if err != nil {
-		return err
-	}
 	tokenURL := urlWithPath(*a.TargetURL, "/oauth/token")
 	c := &oauth2.Config{
 		ClientID:     a.clientID,
@@ -331,7 +374,7 @@ func (a *API) validateAuthorizationCode() error {
 		RedirectURL: a.redirectURL.String(),
 	}
 	a.oauthConfig = c
-	ctx := context.WithValue(context.Background(), oauth2.HTTPClient, a.UnauthenticatedClient)
+	ctx := context.WithValue(context.Background(), oauth2.HTTPClient, a.unauthenticatedClient)
 
 	if !a.token.Valid() {
 		t, err := a.Token(context.Background())
@@ -341,8 +384,8 @@ func (a *API) validateAuthorizationCode() error {
 		a.token = t
 	}
 
-	a.AuthenticatedClient = c.Client(ctx, a.token)
-	return a.ensureTransports()
+	a.Client = c.Client(ctx, a.token)
+	return nil
 }
 
 type withRefreshToken struct {
@@ -370,10 +413,6 @@ func (w *withRefreshToken) ApplyAuthentication(a *API) {
 }
 
 func (a *API) validateRefreshToken() error {
-	err := a.validateTarget()
-	if err != nil {
-		return err
-	}
 	tokenURL := urlWithPath(*a.TargetURL, "/oauth/token")
 	query := tokenURL.Query()
 	query.Set("token_format", a.tokenFormat.String())
@@ -387,7 +426,7 @@ func (a *API) validateRefreshToken() error {
 		},
 	}
 	a.oauthConfig = c
-	ctx := context.WithValue(context.Background(), oauth2.HTTPClient, a.UnauthenticatedClient)
+	ctx := context.WithValue(context.Background(), oauth2.HTTPClient, a.unauthenticatedClient)
 
 	if !a.token.Valid() {
 		t, err := a.Token(context.Background())
@@ -397,8 +436,8 @@ func (a *API) validateRefreshToken() error {
 		a.token = t
 	}
 
-	a.AuthenticatedClient = c.Client(ctx, a.token)
-	return a.ensureTransports()
+	a.Client = c.Client(ctx, a.token)
+	return nil
 }
 
 type withToken struct {
@@ -421,13 +460,13 @@ func (a *API) validateToken() error {
 
 	tokenClient := &http.Client{
 		Transport: &tokenTransport{
-			underlyingTransport: a.UnauthenticatedClient.Transport,
+			underlyingTransport: a.unauthenticatedClient.Transport,
 			token:               *a.token,
 		},
 	}
 
-	a.AuthenticatedClient = tokenClient
-	return a.ensureTransports()
+	a.Client = tokenClient
+	return nil
 }
 
 type tokenTransport struct {
@@ -438,4 +477,15 @@ type tokenTransport struct {
 func (t *tokenTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	req.Header.Set("Authorization", fmt.Sprintf("%s %s", t.token.Type(), t.token.AccessToken))
 	return t.underlyingTransport.RoundTrip(req)
+}
+
+type withNoAuthentication struct {
+}
+
+func WithNoAuthentication() AuthenticationOption {
+	return &withNoAuthentication{}
+}
+
+func (w *withNoAuthentication) ApplyAuthentication(a *API) {
+	a.mode = custom
 }

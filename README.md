@@ -23,9 +23,8 @@ require github.com/cloudfoundry-community/go-uaa latest
 
 #### Step 2: Construct and Use `uaa.API`
 
-Construct a `uaa.API` by using `uaa.New(target string, zoneID string, authOpt AuthenticationOption, opts ...Option)`:
+Construct a `uaa.API` by using `uaa.New(target string, authOpt AuthenticationOption, opts ...Option)`:
 * The target is the URL of your UAA API (for example, https://uaa.run.pivotal.io); *do not* include `/oauth/token` suffix
-* The [zone ID](https://docs.cloudfoundry.org/uaa/uaa-concepts.html#iz) is the identifier for a tenant of UAA; it is common to supply an empty zone ID
 * You must choose one authentication method and supply it as the third argument. There are a number of authentication methods available:
   * [`uaa.WithClientCredentials(clientID string, clientSecret string, tokenFormat TokenFormat)`](https://godoc.org/github.com/cloudfoundry-community/go-uaa#WithClientCredentials)
   * [`uaa.WithPasswordCredentials(clientID string, clientSecret string, username string, password string, tokenFormat TokenFormat)`](https://godoc.org/github.com/cloudfoundry-community/go-uaa#WithPasswordCredentials)
@@ -33,8 +32,11 @@ Construct a `uaa.API` by using `uaa.New(target string, zoneID string, authOpt Au
   * [`uaa.WithRefreshToken(clientID string, clientSecret string, refreshToken string, tokenFormat TokenFormat)`](https://godoc.org/github.com/cloudfoundry-community/go-uaa#WithRefreshToken)
   * [`uaa.WithToken(token *oauth2.Token)`](https://godoc.org/github.com/cloudfoundry-community/go-uaa#WithToken) (this is the only authentication methods that **cannot** automatically refresh the token when it expires)
 * You can optionally supply one or more options:
+  * [`uaa.WithZoneID(zoneID string)`](https://godoc.org/github.com/cloudfoundry-community/go-uaa#WithZoneID) if you want to specify your own [zone ID](https://docs.cloudfoundry.org/uaa/uaa-concepts.html#iz)
   * [`uaa.WithClient(client *http.Client)`](https://godoc.org/github.com/cloudfoundry-community/go-uaa#WithClient) if you want to specify your own `http.Client`
   * [`uaa.WithSkipSSLValidation(skipSSLValidation bool)`](https://godoc.org/github.com/cloudfoundry-community/go-uaa#WithSkipSSLValidation) if you want to ignore SSL validation issues; this is not recommended, and you should instead ensure you trust the certificate authority that issues the certificates used by UAA
+	* [`uaa.WithUserAgent(userAgent string)`](https://godoc.org/github.com/cloudfoundry-community/go-uaa#WithUserAgent) if you want to supply your own user agent for requests to the UAA API
+	* [`uaa.WithVerbosity(verbose bool)`](https://godoc.org/github.com/cloudfoundry-community/go-uaa#WithVerbosity) if you want to enable verbose logging
 
 ```bash
 $ cat main.go
