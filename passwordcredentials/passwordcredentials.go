@@ -81,7 +81,10 @@ func retrieveToken(ctx context.Context, ClientID, ClientSecret, TokenURL string,
 			Expiry:       tj.expiry(),
 			Raw:          make(map[string]interface{}),
 		}
-		json.Unmarshal(body, &token.Raw) // no error checks for optional fields
+		err = json.Unmarshal(body, &token.Raw) // no error checks for optional fields
+		if err != nil {
+			return nil, err
+		}
 	}
 	// Don't overwrite `RefreshToken` with an empty value
 	// if this was a token refreshing request.
@@ -251,11 +254,4 @@ func (c *tokenSource) Token() (*oauth2.Token, error) {
 		v[k] = p
 	}
 	return retrieveToken(c.ctx, c.conf.ClientID, c.conf.ClientSecret, c.conf.Endpoint.TokenURL, v)
-}
-
-func condVal(v string) []string {
-	if v == "" {
-		return nil
-	}
-	return []string{v}
 }

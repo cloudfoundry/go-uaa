@@ -3,7 +3,6 @@ package uaa_test
 import (
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 
 	"testing"
 
@@ -57,13 +56,7 @@ func testInfo(t *testing.T, when spec.G, it spec.S) {
 			handlerCalls = handlerCalls + 1
 			h.ServeHTTP(w, req)
 		}))
-		url, _ := url.Parse(s.URL)
-		client := &http.Client{}
-		a = &uaa.API{
-			UnauthenticatedClient: client,
-			AuthenticatedClient:   client,
-			TargetURL:             url,
-		}
+		a, _ = uaa.New(s.URL, uaa.WithNoAuthentication())
 	})
 
 	it.After(func() {
@@ -78,7 +71,8 @@ func testInfo(t *testing.T, when spec.G, it spec.S) {
 				Expect(req.Method).To(Equal(http.MethodGet))
 				Expect(req.URL.Path).To(Equal("/info"))
 				Expect(req.Header.Get("Accept")).To(Equal("application/json"))
-				w.Write([]byte(InfoResponseJSON))
+				_, err := w.Write([]byte(InfoResponseJSON))
+				Expect(err).NotTo(HaveOccurred())
 			})
 		})
 
@@ -123,7 +117,8 @@ func testInfo(t *testing.T, when spec.G, it spec.S) {
 				Expect(req.Method).To(Equal(http.MethodGet))
 				Expect(req.URL.Path).To(Equal("/info"))
 				Expect(req.Header.Get("Accept")).To(Equal("application/json"))
-				w.Write([]byte("{unparsable-json-response}"))
+				_, err := w.Write([]byte("{unparsable-json-response}"))
+				Expect(err).NotTo(HaveOccurred())
 			})
 		})
 

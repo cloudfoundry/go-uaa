@@ -2,12 +2,13 @@ package uaa
 
 import (
 	"fmt"
+
 	"github.com/pkg/errors"
 	"golang.org/x/oauth2"
 )
 
 type RequestError struct {
-	Url string
+	Url           string
 	ErrorResponse []byte
 }
 
@@ -25,7 +26,7 @@ func requestErrorFromOauthError(err error) error {
 }
 
 func requestErrorWithBody(url string, body []byte) error {
-	return RequestError{url, body }
+	return RequestError{url, body}
 }
 
 func requestError(url string) error {

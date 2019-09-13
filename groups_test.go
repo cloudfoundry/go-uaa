@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"testing"
 
 	uaa "github.com/cloudfoundry-community/go-uaa"
@@ -92,13 +91,7 @@ func testGroupsExtra(t *testing.T, when spec.G, it spec.S) {
 			Expect(handler).NotTo(BeNil())
 			handler.ServeHTTP(w, req)
 		}))
-		c := &http.Client{Transport: http.DefaultTransport}
-		u, _ := url.Parse(s.URL)
-		a = &uaa.API{
-			TargetURL:             u,
-			AuthenticatedClient:   c,
-			UnauthenticatedClient: c,
-		}
+		a, _ = uaa.New(s.URL, uaa.WithNoAuthentication())
 	})
 
 	it.After(func() {
@@ -125,7 +118,8 @@ func testGroupsExtra(t *testing.T, when spec.G, it spec.S) {
 					Expect(req.URL.Path).To(Equal(uaa.GroupsEndpoint))
 					Expect(req.URL.Query().Get("filter")).To(Equal(`displayName eq "uaa.admin"`))
 					w.WriteHeader(http.StatusOK)
-					w.Write([]byte(response))
+					_, err := w.Write([]byte(response))
+					Expect(err).NotTo(HaveOccurred())
 				})
 
 				g, err := a.GetGroupByName("uaa.admin", "")
@@ -152,7 +146,8 @@ func testGroupsExtra(t *testing.T, when spec.G, it spec.S) {
 					Expect(req.URL.Path).To(Equal(uaa.GroupsEndpoint))
 					Expect(req.URL.Query().Get("filter")).To(Equal(`displayName eq "uaa.admin"`))
 					w.WriteHeader(http.StatusOK)
-					w.Write([]byte(PaginatedResponse()))
+					_, err := w.Write([]byte(PaginatedResponse()))
+					Expect(err).NotTo(HaveOccurred())
 				})
 
 				_, err := a.GetGroupByName("uaa.admin", "")
@@ -169,7 +164,8 @@ func testGroupsExtra(t *testing.T, when spec.G, it spec.S) {
 					Expect(req.URL.Query().Get("filter")).To(Equal(`displayName eq "uaa.admin"`))
 					Expect(req.URL.Query().Get("attributes")).To(Equal(`displayName`))
 					w.WriteHeader(http.StatusOK)
-					w.Write([]byte(PaginatedResponse(uaa.Group{DisplayName: "uaa.admin"})))
+					_, err := w.Write([]byte(PaginatedResponse(uaa.Group{DisplayName: "uaa.admin"})))
+					Expect(err).NotTo(HaveOccurred())
 				})
 				_, err := a.GetGroupByName("uaa.admin", "displayName")
 				Expect(err).NotTo(HaveOccurred())
@@ -184,7 +180,8 @@ func testGroupsExtra(t *testing.T, when spec.G, it spec.S) {
 				Expect(req.Header.Get("Accept")).To(Equal("application/json"))
 				Expect(req.URL.Path).To(Equal(fmt.Sprintf("%s/%s/members", uaa.GroupsEndpoint, "group-id-1")))
 				w.WriteHeader(http.StatusOK)
-				w.Write([]byte(membershipJSON))
+				_, err := w.Write([]byte(membershipJSON))
+				Expect(err).NotTo(HaveOccurred())
 			})
 			err := a.AddGroupMember("group-id-1", "user-id-1", "", "")
 			Expect(err).NotTo(HaveOccurred())
@@ -199,7 +196,8 @@ func testGroupsExtra(t *testing.T, when spec.G, it spec.S) {
 				Expect(req.Header.Get("Accept")).To(Equal("application/json"))
 				Expect(req.URL.Path).To(Equal(fmt.Sprintf("%s/%s/members", uaa.GroupsEndpoint, "group-id-1")))
 				w.WriteHeader(http.StatusOK)
-				w.Write([]byte(membershipJSON))
+				_, err := w.Write([]byte(membershipJSON))
+				Expect(err).NotTo(HaveOccurred())
 			})
 			err := a.AddGroupMember("group-id-1", "user-id-1", "", "")
 			Expect(err).NotTo(HaveOccurred())
@@ -209,7 +207,8 @@ func testGroupsExtra(t *testing.T, when spec.G, it spec.S) {
 				Expect(req.Header.Get("Accept")).To(Equal("application/json"))
 				Expect(req.URL.Path).To(Equal(fmt.Sprintf("%s/%s/members/%s", uaa.GroupsEndpoint, "group-id-1", "user-id-1")))
 				w.WriteHeader(http.StatusOK)
-				w.Write([]byte(membershipJSON))
+				_, err := w.Write([]byte(membershipJSON))
+				Expect(err).NotTo(HaveOccurred())
 			})
 			err = a.RemoveGroupMember("group-id-1", "user-id-1", "", "")
 			Expect(err).NotTo(HaveOccurred())

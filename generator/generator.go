@@ -103,35 +103,6 @@ func tolower(s string) string {
 	return strings.ToLower(s)
 }
 
-func join(s ...string) string {
-	return strings.Join(s, ", ")
-}
-
-func joinfields(fields []structField, includeMetadata bool) string {
-	names := make([]string, 0, len(fields))
-	for i := range fields {
-		names = append(names, tolower(fields[i].Name))
-	}
-	if includeMetadata {
-		names = append(names, "metadata")
-	}
-
-	return join(names...)
-}
-
-func joinfieldsprefixlower(fields []structField, prefix string) string {
-	return tolower(joinfieldsprefix(fields, prefix))
-}
-
-func joinfieldsprefix(fields []structField, prefix string) string {
-	names := make([]string, 0, len(fields))
-	for i := range fields {
-		names = append(names, prefix+fields[i].Name)
-	}
-
-	return join(names...)
-}
-
 type structField struct {
 	ModelTypeName       string // name of the parent model object
 	ModelPluralTypeName string // plural name of the parent model object
@@ -146,10 +117,6 @@ type typeGenerator struct {
 	SupportsPaging      bool          // paging is supported
 	Fields              []structField // fields on the struct we're generating for (converted to columns)
 }
-
-var (
-	mode string
-)
 
 var modelTmpl = template.Must(template.New("modelTempl").Funcs(template.FuncMap{
 	"tolower": tolower,

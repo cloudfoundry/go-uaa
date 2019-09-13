@@ -3,7 +3,6 @@ package uaa_test
 import (
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"testing"
 
 	uaa "github.com/cloudfoundry-community/go-uaa"
@@ -39,13 +38,7 @@ func testMe(t *testing.T, when spec.G, it spec.S) {
 			Expect(handler).NotTo(BeNil())
 			handler.ServeHTTP(w, req)
 		}))
-		c := &http.Client{Transport: http.DefaultTransport}
-		u, _ := url.Parse(s.URL)
-		a = &uaa.API{
-			TargetURL:             u,
-			AuthenticatedClient:   c,
-			UnauthenticatedClient: c,
-		}
+		a, _ = uaa.New(s.URL, uaa.WithNoAuthentication())
 	})
 
 	it.After(func() {
@@ -60,7 +53,8 @@ func testMe(t *testing.T, when spec.G, it spec.S) {
 			Expect(req.URL.Path).To(Equal("/userinfo"))
 			Expect(req.URL.Query().Get("scheme")).To(Equal("openid"))
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(userinfoJSON))
+			_, err := w.Write([]byte(userinfoJSON))
+			Expect(err).NotTo(HaveOccurred())
 		})
 
 		userinfo, err := a.GetMe()
@@ -94,7 +88,8 @@ func testMe(t *testing.T, when spec.G, it spec.S) {
 			Expect(req.URL.Path).To(Equal("/userinfo"))
 			Expect(req.URL.Query().Get("scheme")).To(Equal("openid"))
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte("{unparsable-json-response}"))
+			_, err := w.Write([]byte("{unparsable-json-response}"))
+			Expect(err).NotTo(HaveOccurred())
 		})
 		u, err := a.GetMe()
 		Expect(err).To(HaveOccurred())

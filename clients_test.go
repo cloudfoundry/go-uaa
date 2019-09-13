@@ -4,7 +4,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"testing"
 
 	uaa "github.com/cloudfoundry-community/go-uaa"
@@ -61,14 +60,9 @@ func testClientExtra(t *testing.T, when spec.G, it spec.S) {
 
 		it.Before(func() {
 			server = ghttp.NewServer()
-
-			c := &http.Client{Transport: http.DefaultTransport}
-			u, _ := url.Parse(server.URL())
-			a = &uaa.API{
-				TargetURL:             u,
-				AuthenticatedClient:   c,
-				UnauthenticatedClient: c,
-			}
+			var err error
+			a, err = uaa.New(server.URL(), uaa.WithNoAuthentication())
+			Expect(err).NotTo(HaveOccurred())
 		})
 
 		it.After(func() {
@@ -78,7 +72,7 @@ func testClientExtra(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		when("the client returned from the server contains an autoapprove value that is a boolean", func() {
-		  response := `{
+			response := `{
       	"scope" : [ "clients.read", "clients.write" ],
       	"client_id" : "00000000-0000-0000-0000-000000000001",
       	"resource_ids" : [ "none" ],
@@ -95,7 +89,7 @@ func testClientExtra(t *testing.T, when spec.G, it spec.S) {
 
 			it.Before(func() {
 				server.AppendHandlers(ghttp.CombineHandlers(
-					ghttp.VerifyRequest("GET", uaa.ClientsEndpoint + "/00000000-0000-0000-0000-000000000001"),
+					ghttp.VerifyRequest("GET", uaa.ClientsEndpoint+"/00000000-0000-0000-0000-000000000001"),
 					ghttp.VerifyHeaderKV("Accept", "application/json"),
 					ghttp.RespondWith(http.StatusOK, response),
 				))
@@ -109,7 +103,7 @@ func testClientExtra(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		when("the client returned from the server contains an autoapprove value that is a string", func() {
-		  response := `{
+			response := `{
       	"scope" : [ "clients.read", "clients.write" ],
       	"client_id" : "00000000-0000-0000-0000-000000000001",
       	"resource_ids" : [ "none" ],
@@ -126,7 +120,7 @@ func testClientExtra(t *testing.T, when spec.G, it spec.S) {
 
 			it.Before(func() {
 				server.AppendHandlers(ghttp.CombineHandlers(
-					ghttp.VerifyRequest("GET", uaa.ClientsEndpoint + "/00000000-0000-0000-0000-000000000001"),
+					ghttp.VerifyRequest("GET", uaa.ClientsEndpoint+"/00000000-0000-0000-0000-000000000001"),
 					ghttp.VerifyHeaderKV("Accept", "application/json"),
 					ghttp.RespondWith(http.StatusOK, response),
 				))
@@ -263,13 +257,7 @@ func testClientExtra(t *testing.T, when spec.G, it spec.S) {
 				Expect(handler).NotTo(BeNil())
 				handler.ServeHTTP(w, req)
 			}))
-			c := &http.Client{Transport: http.DefaultTransport}
-			u, _ := url.Parse(s.URL)
-			a = &uaa.API{
-				TargetURL:             u,
-				AuthenticatedClient:   c,
-				UnauthenticatedClient: c,
-			}
+			a, _ = uaa.New(s.URL, uaa.WithNoAuthentication())
 		})
 
 		it.After(func() {
@@ -289,7 +277,8 @@ func testClientExtra(t *testing.T, when spec.G, it spec.S) {
 				Expect(body).To(MatchJSON(`{"clientId": "00000000-0000-0000-0000-000000000001", "secret": "new_secret"}`))
 				w.WriteHeader(http.StatusOK)
 			})
-			a.ChangeClientSecret("00000000-0000-0000-0000-000000000001", "new_secret")
+			err := a.ChangeClientSecret("00000000-0000-0000-0000-000000000001", "new_secret")
+			Expect(err).NotTo(HaveOccurred())
 			Expect(called).To(Equal(1))
 		})
 

@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"testing"
 
 	uaa "github.com/cloudfoundry-community/go-uaa"
@@ -104,13 +103,7 @@ func testUsers(t *testing.T, when spec.G, it spec.S) {
 			Expect(handler).NotTo(BeNil())
 			handler.ServeHTTP(w, req)
 		}))
-		c := &http.Client{Transport: http.DefaultTransport}
-		u, _ := url.Parse(s.URL)
-		a = &uaa.API{
-			TargetURL:             u,
-			AuthenticatedClient:   c,
-			UnauthenticatedClient: c,
-		}
+		a, _ = uaa.New(s.URL, uaa.WithNoAuthentication())
 	})
 
 	it.After(func() {
@@ -138,7 +131,8 @@ func testUsers(t *testing.T, when spec.G, it spec.S) {
 					Expect(req.URL.Path).To(Equal("/Users"))
 					Expect(req.URL.Query().Get("filter")).To(Equal(`userName eq "marcus" and origin eq "uaa"`))
 					w.WriteHeader(http.StatusOK)
-					w.Write([]byte(response))
+					_, err := w.Write([]byte(response))
+					Expect(err).NotTo(HaveOccurred())
 				})
 
 				u, err := a.GetUserByUsername("marcus", "uaa", "")
@@ -166,7 +160,8 @@ func testUsers(t *testing.T, when spec.G, it spec.S) {
 					Expect(req.URL.Path).To(Equal("/Users"))
 					Expect(req.URL.Query().Get("filter")).To(Equal(`userName eq "marcus" and origin eq "uaa"`))
 					w.WriteHeader(http.StatusOK)
-					w.Write([]byte(response))
+					_, err := w.Write([]byte(response))
+					Expect(err).NotTo(HaveOccurred())
 				})
 				_, err := a.GetUserByUsername("marcus", "uaa", "")
 				Expect(err).To(HaveOccurred())
@@ -181,7 +176,8 @@ func testUsers(t *testing.T, when spec.G, it spec.S) {
 						Expect(req.URL.Query().Get("filter")).To(Equal(`userName eq "marcus" and origin eq "uaa"`))
 						Expect(req.URL.Query().Get("attributes")).To(Equal(`userName,emails`))
 						w.WriteHeader(http.StatusOK)
-						w.Write([]byte(PaginatedResponse(uaa.User{Username: "marcus", Origin: "uaa"})))
+						_, err := w.Write([]byte(PaginatedResponse(uaa.User{Username: "marcus", Origin: "uaa"})))
+						Expect(err).NotTo(HaveOccurred())
 					})
 					_, err := a.GetUserByUsername("marcus", "uaa", "userName,emails")
 					Expect(err).NotTo(HaveOccurred())
@@ -198,7 +194,8 @@ func testUsers(t *testing.T, when spec.G, it spec.S) {
 					Expect(req.URL.Path).To(Equal("/Users"))
 					Expect(req.URL.Query().Get("filter")).To(Equal(`userName eq "marcus"`))
 					w.WriteHeader(http.StatusOK)
-					w.Write([]byte(response))
+					_, err := w.Write([]byte(response))
+					Expect(err).NotTo(HaveOccurred())
 				})
 				u, err := a.GetUserByUsername("marcus", "", "")
 				Expect(err).NotTo(HaveOccurred())
@@ -223,7 +220,8 @@ func testUsers(t *testing.T, when spec.G, it spec.S) {
 					Expect(req.URL.Path).To(Equal("/Users"))
 					Expect(req.URL.Query().Get("filter")).To(Equal(`userName eq "marcus"`))
 					w.WriteHeader(http.StatusOK)
-					w.Write([]byte(PaginatedResponse()))
+					_, err := w.Write([]byte(PaginatedResponse()))
+					Expect(err).NotTo(HaveOccurred())
 				})
 				_, err := a.GetUserByUsername("marcus", "", "")
 				Expect(err).To(HaveOccurred())
@@ -240,7 +238,8 @@ func testUsers(t *testing.T, when spec.G, it spec.S) {
 					Expect(req.URL.Path).To(Equal("/Users"))
 					Expect(req.URL.Query().Get("filter")).To(Equal(`userName eq "marcus"`))
 					w.WriteHeader(http.StatusOK)
-					w.Write([]byte(response))
+					_, err := w.Write([]byte(response))
+					Expect(err).NotTo(HaveOccurred())
 				})
 
 				_, err := a.GetUserByUsername("marcus", "", "")
@@ -256,7 +255,8 @@ func testUsers(t *testing.T, when spec.G, it spec.S) {
 						Expect(req.URL.Query().Get("filter")).To(Equal(`userName eq "marcus"`))
 						Expect(req.URL.Query().Get("attributes")).To(Equal(`userName,emails`))
 						w.WriteHeader(http.StatusOK)
-						w.Write([]byte(PaginatedResponse(uaa.User{Username: "marcus", Origin: "uaa"})))
+						_, err := w.Write([]byte(PaginatedResponse(uaa.User{Username: "marcus", Origin: "uaa"})))
+						Expect(err).NotTo(HaveOccurred())
 					})
 					_, err := a.GetUserByUsername("marcus", "", "userName,emails")
 					Expect(err).NotTo(HaveOccurred())
@@ -276,11 +276,13 @@ func testUsers(t *testing.T, when spec.G, it spec.S) {
 				if called == 1 {
 					Expect(req.URL.Query().Get("startIndex")).To(Equal("1"))
 					Expect(req.URL.Query().Get("count")).To(Equal("100"))
-					w.Write([]byte(page1))
+					_, err := w.Write([]byte(page1))
+					Expect(err).NotTo(HaveOccurred())
 				} else {
 					Expect(req.URL.Query().Get("startIndex")).To(Equal("2"))
 					Expect(req.URL.Query().Get("count")).To(Equal("1"))
-					w.Write([]byte(page2))
+					_, err := w.Write([]byte(page2))
+					Expect(err).NotTo(HaveOccurred())
 				}
 			})
 
@@ -303,7 +305,8 @@ func testUsers(t *testing.T, when spec.G, it spec.S) {
 				Expect(req.URL.Query().Get("startIndex")).To(Equal("1"))
 				Expect(req.URL.Query().Get("filter")).To(Equal(`id eq "fb5f32e1-5cb3-49e6-93df-6df9c8c8bd7"`))
 				w.WriteHeader(http.StatusOK)
-				w.Write([]byte(userListResponse))
+				_, err := w.Write([]byte(userListResponse))
+				Expect(err).NotTo(HaveOccurred())
 			})
 			userList, _, err := a.ListUsers(`id eq "fb5f32e1-5cb3-49e6-93df-6df9c8c8bd7"`, "", "", "", 1, 100)
 			Expect(err).NotTo(HaveOccurred())
@@ -319,7 +322,8 @@ func testUsers(t *testing.T, when spec.G, it spec.S) {
 				Expect(req.URL.Query().Get("startIndex")).To(Equal("1"))
 				Expect(req.URL.Query().Get("filter")).To(Equal(""))
 				w.WriteHeader(http.StatusOK)
-				w.Write([]byte(userListResponse))
+				_, err := w.Write([]byte(userListResponse))
+				Expect(err).NotTo(HaveOccurred())
 			})
 			userList, _, err := a.ListUsers("", "", "", "", 1, 100)
 			Expect(err).NotTo(HaveOccurred())
@@ -336,7 +340,8 @@ func testUsers(t *testing.T, when spec.G, it spec.S) {
 				Expect(req.URL.Query().Get("filter")).To(Equal(`id eq "fb5f32e1-5cb3-49e6-93df-6df9c8c8bd7"`))
 				Expect(req.URL.Query().Get("attributes")).To(Equal(`userName,emails`))
 				w.WriteHeader(http.StatusOK)
-				w.Write([]byte(userListResponse))
+				_, err := w.Write([]byte(userListResponse))
+				Expect(err).NotTo(HaveOccurred())
 			})
 			userList, _, err := a.ListUsers(`id eq "fb5f32e1-5cb3-49e6-93df-6df9c8c8bd7"`, "", "userName,emails", "", 1, 100)
 			Expect(err).NotTo(HaveOccurred())
@@ -354,7 +359,8 @@ func testUsers(t *testing.T, when spec.G, it spec.S) {
 				Expect(req.URL.Query().Get("attributes")).To(Equal(""))
 				Expect(req.URL.Query().Get("sortBy")).To(Equal("userName"))
 				w.WriteHeader(http.StatusOK)
-				w.Write([]byte(userListResponse))
+				_, err := w.Write([]byte(userListResponse))
+				Expect(err).NotTo(HaveOccurred())
 			})
 			userList, _, err := a.ListUsers("", "userName", "", "", 1, 100)
 			Expect(err).NotTo(HaveOccurred())
@@ -373,7 +379,8 @@ func testUsers(t *testing.T, when spec.G, it spec.S) {
 				Expect(req.URL.Query().Get("sortBy")).To(Equal(""))
 				Expect(req.URL.Query().Get("sortOrder")).To(Equal("ascending"))
 				w.WriteHeader(http.StatusOK)
-				w.Write([]byte(userListResponse))
+				_, err := w.Write([]byte(userListResponse))
+				Expect(err).NotTo(HaveOccurred())
 			})
 			userList, _, err := a.ListUsers("", "", "", uaa.SortAscending, 1, 100)
 			Expect(err).NotTo(HaveOccurred())
@@ -388,7 +395,8 @@ func testUsers(t *testing.T, when spec.G, it spec.S) {
 				Expect(req.URL.Query().Get("count")).To(Equal("100"))
 				Expect(req.URL.Query().Get("startIndex")).To(Equal("1"))
 				w.WriteHeader(http.StatusOK)
-				w.Write([]byte(userListResponse))
+				_, err := w.Write([]byte(userListResponse))
+				Expect(err).NotTo(HaveOccurred())
 			})
 			userList, _, err := a.ListUsers("", "", "", "", 0, 0)
 			Expect(err).NotTo(HaveOccurred())
@@ -419,7 +427,8 @@ func testUsers(t *testing.T, when spec.G, it spec.S) {
 				Expect(req.URL.Query().Get("startIndex")).To(Equal("1"))
 				Expect(req.URL.Query().Get("filter")).To(Equal(`id eq "fb5f32e1-5cb3-49e6-93df-6df9c8c8bd7"`))
 				w.WriteHeader(http.StatusOK)
-				w.Write([]byte("{unparsable}"))
+				_, err := w.Write([]byte("{unparsable}"))
+				Expect(err).NotTo(HaveOccurred())
 			})
 			userList, _, err := a.ListUsers(`id eq "fb5f32e1-5cb3-49e6-93df-6df9c8c8bd7"`, "", "", "", 1, 100)
 			Expect(err).To(HaveOccurred())
@@ -521,7 +530,8 @@ func testUsers(t *testing.T, when spec.G, it spec.S) {
 				Expect(string(userBytes)).To(MatchJSON(`{"verified": false}`))
 
 				newUser := uaa.User{}
-				json.Unmarshal([]byte(userBytes), &newUser)
+				err := json.Unmarshal([]byte(userBytes), &newUser)
+				Expect(err).NotTo(HaveOccurred())
 				Expect(*newUser.Verified).To(BeFalse())
 			})
 
@@ -531,13 +541,15 @@ func testUsers(t *testing.T, when spec.G, it spec.S) {
 				Expect(string(userBytes)).To(MatchJSON(`{"verified": true}`))
 
 				newUser := uaa.User{}
-				json.Unmarshal([]byte(userBytes), &newUser)
+				err := json.Unmarshal([]byte(userBytes), &newUser)
+				Expect(err).NotTo(HaveOccurred())
 				Expect(*newUser.Verified).To(BeTrue())
 			})
 
 			it("correctly hides unset values", func() {
 				user := uaa.User{}
-				json.Unmarshal([]byte("{}"), &user)
+				err := json.Unmarshal([]byte("{}"), &user)
+				Expect(err).NotTo(HaveOccurred())
 				Expect(user.Verified).To(BeNil())
 
 				userBytes, _ := json.Marshal(&user)
@@ -555,7 +567,8 @@ func testUsers(t *testing.T, when spec.G, it spec.S) {
 				Expect(string(userBytes)).To(MatchJSON(`{"emails": [ { "value": "foo@bar.com", "primary": false } ]}`))
 
 				newUser := uaa.User{}
-				json.Unmarshal([]byte(userBytes), &newUser)
+				err := json.Unmarshal([]byte(userBytes), &newUser)
+				Expect(err).NotTo(HaveOccurred())
 				Expect(*newUser.Emails[0].Primary).To(BeFalse())
 			})
 
@@ -568,7 +581,8 @@ func testUsers(t *testing.T, when spec.G, it spec.S) {
 				Expect(string(userBytes)).To(MatchJSON(`{"emails": [ { "value": "foo@bar.com", "primary": true } ]}`))
 
 				newUser := uaa.User{}
-				json.Unmarshal([]byte(userBytes), &newUser)
+				err := json.Unmarshal([]byte(userBytes), &newUser)
+				Expect(err).NotTo(HaveOccurred())
 				Expect(*newUser.Emails[0].Primary).To(BeTrue())
 			})
 		})
@@ -580,7 +594,8 @@ func testUsers(t *testing.T, when spec.G, it spec.S) {
 				Expect(string(userBytes)).To(MatchJSON(`{"active": false}`))
 
 				newUser := uaa.User{}
-				json.Unmarshal([]byte(userBytes), &newUser)
+				err := json.Unmarshal([]byte(userBytes), &newUser)
+				Expect(err).NotTo(HaveOccurred())
 				Expect(*newUser.Active).To(BeFalse())
 			})
 
@@ -590,7 +605,8 @@ func testUsers(t *testing.T, when spec.G, it spec.S) {
 				Expect(string(userBytes)).To(MatchJSON(`{"active": true}`))
 
 				newUser := uaa.User{}
-				json.Unmarshal([]byte(userBytes), &newUser)
+				err := json.Unmarshal([]byte(userBytes), &newUser)
+				Expect(err).NotTo(HaveOccurred())
 				Expect(*newUser.Active).To(BeTrue())
 			})
 		})

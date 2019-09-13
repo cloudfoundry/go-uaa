@@ -3,7 +3,6 @@ package uaa_test
 import (
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"testing"
 
 	uaa "github.com/cloudfoundry-community/go-uaa"
@@ -50,13 +49,7 @@ func testTokenKeys(t *testing.T, when spec.G, it spec.S) {
 			Expect(handler).NotTo(BeNil())
 			handler.ServeHTTP(w, req)
 		}))
-		c := &http.Client{Transport: http.DefaultTransport}
-		u, _ := url.Parse(s.URL)
-		a = &uaa.API{
-			TargetURL:             u,
-			AuthenticatedClient:   c,
-			UnauthenticatedClient: c,
-		}
+		a, _ = uaa.New(s.URL, uaa.WithNoAuthentication())
 	})
 
 	it.After(func() {
@@ -70,7 +63,8 @@ func testTokenKeys(t *testing.T, when spec.G, it spec.S) {
 			Expect(req.Header.Get("Accept")).To(Equal("application/json"))
 			Expect(req.URL.Path).To(Equal("/token_keys"))
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(tokenKeysJSON))
+			_, err := w.Write([]byte(tokenKeysJSON))
+			Expect(err).NotTo(HaveOccurred())
 		})
 		keys, _ := a.TokenKeys()
 		Expect(called).To(Equal(1))
@@ -88,7 +82,8 @@ func testTokenKeys(t *testing.T, when spec.G, it spec.S) {
 		handler = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 			Expect(req.Header.Get("Accept")).To(Equal("application/json"))
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte("{unparsable}"))
+			_, err := w.Write([]byte("{unparsable}"))
+			Expect(err).NotTo(HaveOccurred())
 		})
 		_, err := a.TokenKeys()
 		Expect(err).NotTo(BeNil())
@@ -113,7 +108,8 @@ func testTokenKeys(t *testing.T, when spec.G, it spec.S) {
 					w.WriteHeader(http.StatusNotFound)
 				} else {
 					w.WriteHeader(http.StatusOK)
-					w.Write([]byte(tokenKeyJSON))
+					_, err := w.Write([]byte(tokenKeyJSON))
+					Expect(err).NotTo(HaveOccurred())
 				}
 			})
 			keys, _ := a.TokenKeys()

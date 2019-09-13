@@ -3,7 +3,6 @@ package uaa_test
 import (
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"testing"
 
 	uaa "github.com/cloudfoundry-community/go-uaa"
@@ -27,13 +26,7 @@ func testIsHealthy(t *testing.T, when spec.G, it spec.S) {
 			Expect(handler).NotTo(BeNil())
 			handler.ServeHTTP(w, req)
 		}))
-		c := &http.Client{Transport: http.DefaultTransport}
-		u, _ := url.Parse(s.URL)
-		a = &uaa.API{
-			TargetURL:             u,
-			AuthenticatedClient:   c,
-			UnauthenticatedClient: c,
-		}
+		a, _ = uaa.New(s.URL, uaa.WithNoAuthentication())
 	})
 
 	it.After(func() {
@@ -46,7 +39,8 @@ func testIsHealthy(t *testing.T, when spec.G, it spec.S) {
 		handler = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 			Expect(req.URL.Path).To(Equal("/healthz"))
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte("ok"))
+			_, err := w.Write([]byte("ok"))
+			Expect(err).NotTo(HaveOccurred())
 		})
 
 		status, err := a.IsHealthy()
@@ -58,7 +52,8 @@ func testIsHealthy(t *testing.T, when spec.G, it spec.S) {
 		handler = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 			Expect(req.URL.Path).To(Equal("/healthz"))
 			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte("ok"))
+			_, err := w.Write([]byte("ok"))
+			Expect(err).NotTo(HaveOccurred())
 		})
 		status, err := a.IsHealthy()
 		Expect(status).To(BeFalse())
