@@ -54,9 +54,6 @@ func (a *API) doAndRead(req *http.Request, needsAuthentication bool) ([]byte, er
 	case http.MethodPut, http.MethodPost, http.MethodPatch:
 		req.Header.Add("Content-Type", "application/json")
 	}
-	if a.verbose {
-		logRequest(req)
-	}
 	a.ensureTimeout()
 	var (
 		resp *http.Response
@@ -81,10 +78,6 @@ func (a *API) doAndRead(req *http.Request, needsAuthentication bool) ([]byte, er
 		return nil, requestError(req.URL.String())
 	}
 
-	if a.verbose {
-		logResponse(resp)
-	}
-
 	bytes, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		if a.verbose {
@@ -93,7 +86,7 @@ func (a *API) doAndRead(req *http.Request, needsAuthentication bool) ([]byte, er
 		return nil, requestError(req.URL.String())
 	}
 
-	if !is2XX(resp.StatusCode) {
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		if len(bytes) > 0 {
 			return nil, requestErrorWithBody(req.URL.String(), bytes)
 		}

@@ -83,26 +83,27 @@ func New(target string, authOpt AuthenticationOption, opts ...Option) (*API, err
 		mode:   custom,
 	}
 	authOpt.ApplyAuthentication(a)
-	defaultClientOption := WithClient(defaultClient())
 	defaultUserAgentOption := WithUserAgent("go-uaa")
-	opts = append([]Option{defaultClientOption, defaultUserAgentOption}, opts...)
+	opts = append([]Option{defaultUserAgentOption}, opts...)
 	for _, option := range opts {
 		option.Apply(a)
 	}
+	WithClient(defaultClient(a.verbose)).Apply(a)
 	err := a.validate()
 	if err != nil {
 		return nil, err
 	}
+
 	return a, nil
 }
 
-func defaultClient() *http.Client {
-	return &http.Client{Transport: http.DefaultTransport}
+func defaultClient(verbose bool) *http.Client {
+	return &http.Client{Transport: newLoggingTransport(verbose)}
 }
 
 func (a *API) Token(ctx context.Context) (*oauth2.Token, error) {
 	if _, ok := ctx.Value(oauth2.HTTPClient).(*http.Client); !ok {
-		ctx = context.WithValue(ctx, oauth2.HTTPClient, defaultClient())
+		ctx = context.WithValue(ctx, oauth2.HTTPClient, defaultClient(a.verbose))
 	}
 
 	switch a.mode {
@@ -162,7 +163,7 @@ func (a *API) validate() error {
 		if a.Client == nil && a.unauthenticatedClient != nil {
 			a.Client = a.unauthenticatedClient
 		} else if a.Client == nil {
-			a.Client = defaultClient()
+			a.Client = defaultClient(a.verbose)
 		}
 	}
 	if err != nil {

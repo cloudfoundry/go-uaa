@@ -23,10 +23,6 @@ func (a *API) Curl(path string, method string, data string, headers []string) (s
 		return "", "", err
 	}
 
-	if a.verbose {
-		logRequest(req)
-	}
-
 	a.ensureTransport(a.Client.Transport)
 	resp, err := a.Client.Do(req)
 	if err != nil {
@@ -45,10 +41,6 @@ func (a *API) Curl(path string, method string, data string, headers []string) (s
 		fmt.Printf("%v\n\n", err)
 	}
 	resBody := string(bytes)
-
-	if a.verbose {
-		logResponse(resp)
-	}
 
 	return resHeaders, resBody, nil
 }
