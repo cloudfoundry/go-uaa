@@ -98,7 +98,7 @@ func New(target string, authOpt AuthenticationOption, opts ...Option) (*API, err
 }
 
 func defaultClient(verbose bool) *http.Client {
-	return &http.Client{Transport: newLoggingTransport(verbose)}
+	return &http.Client{Transport: NewUaaTransport(verbose)}
 }
 
 func (a *API) Token(ctx context.Context) (*oauth2.Token, error) {

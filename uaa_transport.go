@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httputil"
+	"strings"
 )
 
 type uaaTransport struct {
@@ -13,6 +14,11 @@ type uaaTransport struct {
 
 func (t *uaaTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	t.logRequest(req)
+
+	authHeader := req.Header.Get("Authorization")
+	if strings.HasPrefix(strings.ToLower(authHeader), "basic") {
+		req.Header.Add("X-CF-ENCODED-CREDENTIALS", "true")
+	}
 
 	resp, err := t.transport().RoundTrip(req)
 	if err != nil {
@@ -24,7 +30,7 @@ func (t *uaaTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	return resp, err
 }
 
-func newLoggingTransport(loggingEnabled bool) *uaaTransport {
+func NewUaaTransport(loggingEnabled bool) *uaaTransport {
 	return &uaaTransport{LoggingEnabled: loggingEnabled}
 }
 
