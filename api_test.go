@@ -148,6 +148,7 @@ func testNew(t *testing.T, when spec.G, it spec.S) {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(api).NotTo(BeNil())
 			Expect(api.Client).NotTo(BeNil())
+			Expect(reflect.TypeOf(api.Client.Transport.(*oauth2.Transport).Base).String()).To(Equal("*uaa.uaaTransport"))
 		})
 
 		when("the server returns tokens", func() {
@@ -209,6 +210,7 @@ func testNew(t *testing.T, when spec.G, it spec.S) {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(api).NotTo(BeNil())
 			Expect(api.Client).NotTo(BeNil())
+			Expect(reflect.TypeOf(api.Client.Transport.(*oauth2.Transport).Base).String()).To(Equal("*uaa.uaaTransport"))
 		})
 	})
 
@@ -275,6 +277,7 @@ func testNew(t *testing.T, when spec.G, it spec.S) {
 				Expect(err).NotTo(HaveOccurred())
 				Expect(api).NotTo(BeNil())
 				Expect(api.Client).NotTo(BeNil())
+				Expect(reflect.TypeOf(api.Client.Transport.(*oauth2.Transport).Base).String()).To(Equal("*uaa.uaaTransport"))
 			})
 		})
 
@@ -320,7 +323,7 @@ func testNew(t *testing.T, when spec.G, it spec.S) {
 			})
 		})
 
-		when("the unauthenticatedClient is removed", func() {
+		when("the baseClient is removed", func() {
 			it.Before(func() {
 				// Token retrieval is done as part of validateAuthorizationCode
 				// validateAuthorizationCode is called two times on construction
@@ -391,6 +394,7 @@ func testNew(t *testing.T, when spec.G, it spec.S) {
 				Expect(err).NotTo(HaveOccurred())
 				Expect(api).NotTo(BeNil())
 				Expect(api.Client).NotTo(BeNil())
+				Expect(reflect.TypeOf(api.Client.Transport.(*oauth2.Transport).Base).String()).To(Equal("*uaa.uaaTransport"))
 			})
 		})
 
@@ -429,7 +433,7 @@ func testNew(t *testing.T, when spec.G, it spec.S) {
 			})
 		})
 
-		when("the unauthenticatedClient is removed", func() {
+		when("the baseClient is removed", func() {
 			it.Before(func() {
 				// Token retrieval is done as part of validateRefreshToken
 				// validateRefreshToken is called two times on construction

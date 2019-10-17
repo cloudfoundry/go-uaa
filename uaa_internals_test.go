@@ -15,6 +15,7 @@ func init() {
 	suite("contains", testContains)
 	suite("URLWithPath", testURLWithPath)
 	suite("api", testAPI)
+	suite("uaaTransport", testUaaTransport)
 }
 
 func TestUAAInternals(t *testing.T) {

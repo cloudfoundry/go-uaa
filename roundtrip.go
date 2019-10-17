@@ -59,15 +59,15 @@ func (a *API) doAndRead(req *http.Request, needsAuthentication bool) ([]byte, er
 		resp *http.Response
 		err  error
 	)
-	if needsAuthentication {
+	if !needsAuthentication && a.baseClient != nil {
+		a.ensureTransport(a.baseClient.Transport)
+		resp, err = a.baseClient.Do(req)
+	} else {
 		if a.Client == nil {
-			return nil, errors.New("doAndRead: the HTTPClient cannot be nil")
+			return nil, errors.New("doAndRead: the Client cannot be nil")
 		}
 		a.ensureTransport(a.Client.Transport)
 		resp, err = a.Client.Do(req)
-	} else {
-		a.ensureTransport(a.unauthenticatedClient.Transport)
-		resp, err = a.unauthenticatedClient.Do(req)
 	}
 
 	if err != nil {
@@ -100,8 +100,8 @@ func (a *API) ensureTimeout() {
 		a.Client.Timeout = time.Second * 120
 	}
 
-	if a.unauthenticatedClient != nil && a.unauthenticatedClient.Timeout == 0 {
-		a.unauthenticatedClient.Timeout = time.Second * 120
+	if a.baseClient != nil && a.baseClient.Timeout == 0 {
+		a.baseClient.Timeout = time.Second * 120
 	}
 }
 

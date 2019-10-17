@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"reflect"
 
 	pc "github.com/cloudfoundry-community/go-uaa/passwordcredentials"
 	"golang.org/x/oauth2"
@@ -17,7 +18,8 @@ import (
 // API is a client to the UAA API.
 type API struct {
 	Client                    *http.Client
-	unauthenticatedClient     *http.Client
+	baseClient                *http.Client
+	baseTransport             http.RoundTripper
 	TargetURL                 *url.URL
 	redirectURL               *url.URL
 	skipSSLValidation         bool
@@ -83,13 +85,14 @@ func New(target string, authOpt AuthenticationOption, opts ...Option) (*API, err
 		mode:   custom,
 	}
 	authOpt.ApplyAuthentication(a)
+	defaultClient := &http.Client{Transport: http.DefaultTransport}
+	defaultClientOption := WithClient(defaultClient)
 	defaultUserAgentOption := WithUserAgent("go-uaa")
-	opts = append([]Option{defaultUserAgentOption}, opts...)
+	opts = append([]Option{defaultClientOption, defaultUserAgentOption}, opts...)
 	for _, option := range opts {
 		option.Apply(a)
 	}
-	WithClient(defaultClient(a.verbose)).Apply(a)
-	err := a.validate()
+	err := a.configure()
 	if err != nil {
 		return nil, err
 	}
@@ -97,13 +100,9 @@ func New(target string, authOpt AuthenticationOption, opts ...Option) (*API, err
 	return a, nil
 }
 
-func defaultClient(verbose bool) *http.Client {
-	return &http.Client{Transport: newLoggingTransport(verbose)}
-}
-
 func (a *API) Token(ctx context.Context) (*oauth2.Token, error) {
 	if _, ok := ctx.Value(oauth2.HTTPClient).(*http.Client); !ok {
-		ctx = context.WithValue(ctx, oauth2.HTTPClient, defaultClient(a.verbose))
+		ctx = context.WithValue(ctx, oauth2.HTTPClient, a.baseClient)
 	}
 
 	switch a.mode {
@@ -143,28 +142,51 @@ func (a *API) Token(ctx context.Context) (*oauth2.Token, error) {
 	return nil, errors.New("your configuration provides no way for go-uaa to get a token")
 }
 
-func (a *API) validate() error {
-	err := a.validateTarget()
+func (a *API) baseTransportIsNil() bool {
+	if a.baseTransport == nil || reflect.ValueOf(a.baseTransport).IsNil() {
+		return true
+	}
+	return false
+}
+
+func (a *API) configure() error {
+	err := a.configureTarget()
 	if err != nil {
 		return err
 	}
+	if a.baseClient == nil {
+		return errors.New("please ensure you pass a non-nil client to uaa.WithClient, or remove the uaa.WithClient option")
+	}
+	if a.baseTransportIsNil() {
+		a.baseTransport = a.baseClient.Transport
+	}
+	if a.baseTransportIsNil() {
+		a.baseTransport = http.DefaultTransport
+	}
+
+	a.ensureTransport(a.baseClient.Transport)
+	wrappedTransport := &uaaTransport{
+		base:           a.baseClient.Transport,
+		LoggingEnabled: a.verbose,
+	}
+	a.baseClient.Transport = wrappedTransport
 	switch a.mode {
 	case token:
-		err = a.validateToken()
+		err = a.configureToken()
 	case clientcredentials:
-		a.validateClientCredentials()
+		a.configureClientCredentials()
 	case passwordcredentials:
-		a.validatePasswordCredentials()
+		a.configurePasswordCredentials()
 	case authorizationcode:
-		err = a.validateAuthorizationCode()
+		err = a.configureAuthorizationCode()
 	case refreshtoken:
-		err = a.validateRefreshToken()
+		err = a.configureRefreshToken()
 	case custom:
-		if a.Client == nil && a.unauthenticatedClient != nil {
-			a.Client = a.unauthenticatedClient
-		} else if a.Client == nil {
-			a.Client = defaultClient(a.verbose)
+		if a.Client == nil {
+			a.Client = a.baseClient
 		}
+	default:
+		return errors.New("please ensure you pass an AuthenticationOption (e.g. WithClientCredentials, WithPasswordCredentials, WithAuthorizationCode, WithRefreshToken, WithToken) to New(), or manually construct a uaa.API and set uaa.API.Client")
 	}
 	if err != nil {
 		return err
@@ -173,11 +195,10 @@ func (a *API) validate() error {
 		return errors.New("Client is nil; please ensure you pass an AuthenticationOption (e.g. WithClientCredentials, WithPasswordCredentials, WithAuthorizationCode, WithRefreshToken, WithToken) to New(), or manually set Client")
 	}
 	a.ensureTransport(a.Client.Transport)
-	a.ensureTransport(a.unauthenticatedClient.Transport)
 	return nil
 }
 
-func (a *API) validateTarget() error {
+func (a *API) configureTarget() error {
 	if a.TargetURL != nil {
 		return nil
 	}
@@ -201,7 +222,19 @@ func WithClient(client *http.Client) Option {
 }
 
 func (w *withClient) Apply(a *API) {
-	a.unauthenticatedClient = w.client
+	a.baseClient = w.client
+}
+
+type withTransport struct {
+	transport http.RoundTripper
+}
+
+func WithTransport(transport http.RoundTripper) Option {
+	return &withTransport{transport: transport}
+}
+
+func (w *withTransport) Apply(a *API) {
+	a.baseTransport = w.transport
 }
 
 type withSkipSSLValidation struct {
@@ -269,7 +302,7 @@ func (w *withClientCredentials) ApplyAuthentication(a *API) {
 	a.tokenFormat = w.tokenFormat
 }
 
-func (a *API) validateClientCredentials() {
+func (a *API) configureClientCredentials() {
 	tokenURL := urlWithPath(*a.TargetURL, "/oauth/token")
 	v := url.Values{}
 	v.Add("token_format", a.tokenFormat.String())
@@ -284,7 +317,7 @@ func (a *API) validateClientCredentials() {
 	a.Client = c.Client(context.WithValue(
 		context.Background(),
 		oauth2.HTTPClient,
-		a.unauthenticatedClient,
+		a.baseClient,
 	))
 }
 
@@ -315,7 +348,7 @@ func (w *withPasswordCredentials) ApplyAuthentication(a *API) {
 	a.tokenFormat = w.tokenFormat
 }
 
-func (a *API) validatePasswordCredentials() {
+func (a *API) configurePasswordCredentials() {
 	tokenURL := urlWithPath(*a.TargetURL, "/oauth/token")
 	v := url.Values{}
 	v.Add("token_format", a.tokenFormat.String())
@@ -333,7 +366,7 @@ func (a *API) validatePasswordCredentials() {
 	a.Client = c.Client(context.WithValue(
 		context.Background(),
 		oauth2.HTTPClient,
-		a.unauthenticatedClient))
+		a.baseClient))
 }
 
 type withAuthorizationCode struct {
@@ -363,7 +396,7 @@ func (w *withAuthorizationCode) ApplyAuthentication(a *API) {
 	a.redirectURL = w.redirectURL
 }
 
-func (a *API) validateAuthorizationCode() error {
+func (a *API) configureAuthorizationCode() error {
 	tokenURL := urlWithPath(*a.TargetURL, "/oauth/token")
 	c := &oauth2.Config{
 		ClientID:     a.clientID,
@@ -375,7 +408,7 @@ func (a *API) validateAuthorizationCode() error {
 		RedirectURL: a.redirectURL.String(),
 	}
 	a.oauthConfig = c
-	ctx := context.WithValue(context.Background(), oauth2.HTTPClient, a.unauthenticatedClient)
+	ctx := context.WithValue(context.Background(), oauth2.HTTPClient, a.baseClient)
 
 	if !a.token.Valid() {
 		t, err := a.Token(context.Background())
@@ -413,7 +446,7 @@ func (w *withRefreshToken) ApplyAuthentication(a *API) {
 	a.tokenFormat = w.tokenFormat
 }
 
-func (a *API) validateRefreshToken() error {
+func (a *API) configureRefreshToken() error {
 	tokenURL := urlWithPath(*a.TargetURL, "/oauth/token")
 	query := tokenURL.Query()
 	query.Set("token_format", a.tokenFormat.String())
@@ -427,7 +460,7 @@ func (a *API) validateRefreshToken() error {
 		},
 	}
 	a.oauthConfig = c
-	ctx := context.WithValue(context.Background(), oauth2.HTTPClient, a.unauthenticatedClient)
+	ctx := context.WithValue(context.Background(), oauth2.HTTPClient, a.baseClient)
 
 	if !a.token.Valid() {
 		t, err := a.Token(context.Background())
@@ -454,14 +487,14 @@ func (w *withToken) ApplyAuthentication(a *API) {
 	a.token = w.token
 }
 
-func (a *API) validateToken() error {
+func (a *API) configureToken() error {
 	if !a.token.Valid() {
 		return errors.New("access token is not valid, or is expired")
 	}
 
 	tokenClient := &http.Client{
 		Transport: &tokenTransport{
-			underlyingTransport: a.unauthenticatedClient.Transport,
+			underlyingTransport: a.baseClient.Transport,
 			token:               *a.token,
 		},
 	}
