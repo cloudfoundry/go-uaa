@@ -34,7 +34,8 @@ func testEnsureTransport(t *testing.T, when spec.G, it spec.S) {
 
 		it.Before(func() {
 			s = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {}))
-			a.unauthenticatedClient = &http.Client{}
+			a.Client = &http.Client{}
+			a.baseClient = &http.Client{}
 		})
 
 		it.After(func() {
@@ -53,19 +54,19 @@ func testEnsureTransport(t *testing.T, when spec.G, it spec.S) {
 
 	when("the client transport is not set", func() {
 		it.Before(func() {
-			a.unauthenticatedClient = &http.Client{}
+			a.baseClient = &http.Client{}
 		})
 
 		it("is a no-op", func() {
-			a.ensureTransport(a.unauthenticatedClient.Transport)
-			Expect(a.unauthenticatedClient).NotTo(BeNil())
-			Expect(a.unauthenticatedClient.Transport).To(BeNil())
+			a.ensureTransport(a.baseClient.Transport)
+			Expect(a.baseClient).NotTo(BeNil())
+			Expect(a.baseClient.Transport).To(BeNil())
 		})
 	})
 
 	when("the client transport is an http.Transport", func() {
 		it.Before(func() {
-			a.unauthenticatedClient = &http.Client{Transport: &http.Transport{}}
+			a.baseClient = &http.Client{Transport: &http.Transport{}}
 		})
 
 		when("skipSSLValidation is false", func() {
@@ -74,10 +75,10 @@ func testEnsureTransport(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			it("will not initialize the TLS client config", func() {
-				a.ensureTransport(a.unauthenticatedClient.Transport)
-				Expect(a.unauthenticatedClient).NotTo(BeNil())
-				Expect(a.unauthenticatedClient.Transport).NotTo(BeNil())
-				t := a.unauthenticatedClient.Transport.(*http.Transport)
+				a.ensureTransport(a.baseClient.Transport)
+				Expect(a.baseClient).NotTo(BeNil())
+				Expect(a.baseClient.Transport).NotTo(BeNil())
+				t := a.baseClient.Transport.(*http.Transport)
 				Expect(t.TLSClientConfig).To(BeNil())
 			})
 		})
@@ -88,10 +89,10 @@ func testEnsureTransport(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			it("will initialize the TLS client config and set InsecureSkipVerify", func() {
-				a.ensureTransport(a.unauthenticatedClient.Transport)
-				Expect(a.unauthenticatedClient).NotTo(BeNil())
-				Expect(a.unauthenticatedClient.Transport).NotTo(BeNil())
-				t := a.unauthenticatedClient.Transport.(*http.Transport)
+				a.ensureTransport(a.baseClient.Transport)
+				Expect(a.baseClient).NotTo(BeNil())
+				Expect(a.baseClient.Transport).NotTo(BeNil())
+				t := a.baseClient.Transport.(*http.Transport)
 				Expect(t.TLSClientConfig).NotTo(BeNil())
 				Expect(t.TLSClientConfig.InsecureSkipVerify).To(BeTrue())
 			})
@@ -100,7 +101,7 @@ func testEnsureTransport(t *testing.T, when spec.G, it spec.S) {
 
 	when("the client transport is a tokenTransport", func() {
 		it.Before(func() {
-			a.unauthenticatedClient = &http.Client{Transport: &tokenTransport{
+			a.baseClient = &http.Client{Transport: &tokenTransport{
 				underlyingTransport: &http.Transport{
 					Proxy: http.ProxyFromEnvironment,
 					DialContext: (&net.Dialer{
@@ -122,10 +123,10 @@ func testEnsureTransport(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			it("will not initialize the TLS client config", func() {
-				a.ensureTransport(a.unauthenticatedClient.Transport)
-				Expect(a.unauthenticatedClient).NotTo(BeNil())
-				Expect(a.unauthenticatedClient.Transport).NotTo(BeNil())
-				t := a.unauthenticatedClient.Transport.(*tokenTransport)
+				a.ensureTransport(a.baseClient.Transport)
+				Expect(a.baseClient).NotTo(BeNil())
+				Expect(a.baseClient.Transport).NotTo(BeNil())
+				t := a.baseClient.Transport.(*tokenTransport)
 				c := t.underlyingTransport.(*http.Transport)
 				Expect(c.TLSClientConfig).To(BeNil())
 			})
@@ -137,10 +138,10 @@ func testEnsureTransport(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			it("will initialize the TLS client config and set InsecureSkipVerify", func() {
-				a.ensureTransport(a.unauthenticatedClient.Transport)
-				Expect(a.unauthenticatedClient).NotTo(BeNil())
-				Expect(a.unauthenticatedClient.Transport).NotTo(BeNil())
-				t := a.unauthenticatedClient.Transport.(*tokenTransport)
+				a.ensureTransport(a.baseClient.Transport)
+				Expect(a.baseClient).NotTo(BeNil())
+				Expect(a.baseClient.Transport).NotTo(BeNil())
+				t := a.baseClient.Transport.(*tokenTransport)
 				c := t.underlyingTransport.(*http.Transport)
 				Expect(c.TLSClientConfig).NotTo(BeNil())
 				Expect(c.TLSClientConfig.InsecureSkipVerify).To(BeTrue())
@@ -150,21 +151,21 @@ func testEnsureTransport(t *testing.T, when spec.G, it spec.S) {
 
 	when("the client transport is an oauth2.Transport but the Base transport is nil", func() {
 		it.Before(func() {
-			a.unauthenticatedClient = &http.Client{Transport: &oauth2.Transport{}}
+			a.baseClient = &http.Client{Transport: &oauth2.Transport{}}
 		})
 
 		it("is a no-op", func() {
-			a.ensureTransport(a.unauthenticatedClient.Transport)
-			Expect(a.unauthenticatedClient).NotTo(BeNil())
-			Expect(a.unauthenticatedClient.Transport).NotTo(BeNil())
-			t := a.unauthenticatedClient.Transport.(*oauth2.Transport)
+			a.ensureTransport(a.baseClient.Transport)
+			Expect(a.baseClient).NotTo(BeNil())
+			Expect(a.baseClient.Transport).NotTo(BeNil())
+			t := a.baseClient.Transport.(*oauth2.Transport)
 			Expect(t.Base).To(BeNil())
 		})
 	})
 
 	when("the client transport is an oauth2.Transport with a Base transport", func() {
 		it.Before(func() {
-			a.unauthenticatedClient = &http.Client{Transport: &oauth2.Transport{
+			a.baseClient = &http.Client{Transport: &oauth2.Transport{
 				Base: &http.Transport{},
 			}}
 		})
@@ -175,10 +176,10 @@ func testEnsureTransport(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			it("will not initialize the TLS client config if skipSSLValidation is false", func() {
-				a.ensureTransport(a.unauthenticatedClient.Transport)
-				Expect(a.unauthenticatedClient).NotTo(BeNil())
-				Expect(a.unauthenticatedClient.Transport).NotTo(BeNil())
-				t := a.unauthenticatedClient.Transport.(*oauth2.Transport)
+				a.ensureTransport(a.baseClient.Transport)
+				Expect(a.baseClient).NotTo(BeNil())
+				Expect(a.baseClient.Transport).NotTo(BeNil())
+				t := a.baseClient.Transport.(*oauth2.Transport)
 				Expect(t.Base).NotTo(BeNil())
 				b := t.Base.(*http.Transport)
 				Expect(b.TLSClientConfig).To(BeNil())
@@ -191,10 +192,10 @@ func testEnsureTransport(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			it("will initialize the TLS client config and set InsecureSkipVerify", func() {
-				a.ensureTransport(a.unauthenticatedClient.Transport)
-				Expect(a.unauthenticatedClient).NotTo(BeNil())
-				Expect(a.unauthenticatedClient.Transport).NotTo(BeNil())
-				t := a.unauthenticatedClient.Transport.(*oauth2.Transport)
+				a.ensureTransport(a.baseClient.Transport)
+				Expect(a.baseClient).NotTo(BeNil())
+				Expect(a.baseClient.Transport).NotTo(BeNil())
+				t := a.baseClient.Transport.(*oauth2.Transport)
 				Expect(t.Base).NotTo(BeNil())
 				b := t.Base.(*http.Transport)
 				Expect(b.TLSClientConfig).NotTo(BeNil())

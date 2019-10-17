@@ -323,7 +323,7 @@ func testNew(t *testing.T, when spec.G, it spec.S) {
 			})
 		})
 
-		when("the unauthenticatedClient is removed", func() {
+		when("the baseClient is removed", func() {
 			it.Before(func() {
 				// Token retrieval is done as part of validateAuthorizationCode
 				// validateAuthorizationCode is called two times on construction
@@ -433,7 +433,7 @@ func testNew(t *testing.T, when spec.G, it spec.S) {
 			})
 		})
 
-		when("the unauthenticatedClient is removed", func() {
+		when("the baseClient is removed", func() {
 			it.Before(func() {
 				// Token retrieval is done as part of validateRefreshToken
 				// validateRefreshToken is called two times on construction

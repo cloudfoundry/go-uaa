@@ -8,7 +8,7 @@ import (
 )
 
 type uaaTransport struct {
-	Transport      http.RoundTripper
+	base           http.RoundTripper
 	LoggingEnabled bool
 }
 
@@ -20,7 +20,7 @@ func (t *uaaTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 		req.Header.Add("X-CF-ENCODED-CREDENTIALS", "true")
 	}
 
-	resp, err := t.transport().RoundTrip(req)
+	resp, err := t.base.RoundTrip(req)
 	if err != nil {
 		return resp, err
 	}
@@ -28,10 +28,6 @@ func (t *uaaTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	t.logResponse(resp)
 
 	return resp, err
-}
-
-func NewUaaTransport(loggingEnabled bool) *uaaTransport {
-	return &uaaTransport{LoggingEnabled: loggingEnabled}
 }
 
 func (t *uaaTransport) logRequest(req *http.Request) {
@@ -46,12 +42,4 @@ func (t *uaaTransport) logResponse(resp *http.Response) {
 		bytes, _ := httputil.DumpResponse(resp, true)
 		fmt.Printf(string(bytes))
 	}
-}
-
-func (t *uaaTransport) transport() http.RoundTripper {
-	if t.Transport != nil {
-		return t.Transport
-	}
-
-	return http.DefaultTransport
 }
