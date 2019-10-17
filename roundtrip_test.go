@@ -29,7 +29,7 @@ func testEnsureTransport(t *testing.T, when spec.G, it spec.S) {
 		})
 	})
 
-	when("the authenticated client is not set but the unauthenticated client is set", func() {
+	when("the client is not set but the base client is set", func() {
 		var s *httptest.Server
 
 		it.Before(func() {
@@ -45,6 +45,28 @@ func testEnsureTransport(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("will make a http call with the unauthenticated client", func() {
+			req, err := http.NewRequest("GET", s.URL, nil)
+			Expect(err).NotTo(HaveOccurred())
+			_, err = a.doAndRead(req, false)
+			Expect(err).NotTo(HaveOccurred())
+		})
+	})
+
+	when("the client is set but the base client is not set", func() {
+		var s *httptest.Server
+
+		it.Before(func() {
+			s = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {}))
+			a.Client = &http.Client{}
+		})
+
+		it.After(func() {
+			if s != nil {
+				s.Close()
+			}
+		})
+
+		it("will make an http call with the client, even when needsAuthentication is false", func() {
 			req, err := http.NewRequest("GET", s.URL, nil)
 			Expect(err).NotTo(HaveOccurred())
 			_, err = a.doAndRead(req, false)

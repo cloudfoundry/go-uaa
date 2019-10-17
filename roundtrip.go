@@ -59,7 +59,7 @@ func (a *API) doAndRead(req *http.Request, needsAuthentication bool) ([]byte, er
 		resp *http.Response
 		err  error
 	)
-	if !needsAuthentication && !a.baseTransportIsNil() {
+	if !needsAuthentication && a.baseClient != nil {
 		a.ensureTransport(a.baseClient.Transport)
 		resp, err = a.baseClient.Do(req)
 	} else {
