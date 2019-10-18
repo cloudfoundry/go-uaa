@@ -12,15 +12,15 @@ import (
 
 // Curl makes a request to the UAA API with the given path, method, data, and
 // headers.
-func (a *API) Curl(path string, method string, data string, headers []string) (string, string, error) {
+func (a *API) Curl(path string, method string, data string, headers []string) (string, string, int, error) {
 	u := urlWithPath(*a.TargetURL, path)
 	req, err := http.NewRequest(method, u.String(), strings.NewReader(data))
 	if err != nil {
-		return "", "", err
+		return "", "", -1, err
 	}
 	err = mergeHeaders(req.Header, strings.Join(headers, "\n"))
 	if err != nil {
-		return "", "", err
+		return "", "", -1, err
 	}
 
 	a.ensureTransport(a.Client.Transport)
@@ -29,7 +29,7 @@ func (a *API) Curl(path string, method string, data string, headers []string) (s
 		if a.verbose {
 			fmt.Printf("%v\n\n", err)
 		}
-		return "", "", err
+		return "", "", -1, err
 	}
 	defer resp.Body.Close()
 
@@ -42,7 +42,7 @@ func (a *API) Curl(path string, method string, data string, headers []string) (s
 	}
 	resBody := string(bytes)
 
-	return resHeaders, resBody, nil
+	return resHeaders, resBody, resp.StatusCode, nil
 }
 
 func mergeHeaders(destination http.Header, headerString string) (err error) {
