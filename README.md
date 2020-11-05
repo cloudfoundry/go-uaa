@@ -1,4 +1,5 @@
 # `go-uaa` [![Travis-CI](https://travis-ci.org/cloudfoundry-community/go-uaa.svg)](https://travis-ci.org/cloudfoundry-community/go-uaa) [![godoc](https://godoc.org/github.com/cloudfoundry-community/go-uaa?status.svg)](http://godoc.org/github.com/cloudfoundry-community/go-uaa) [![Report card](https://goreportcard.com/badge/github.com/cloudfoundry-community/go-uaa)](https://goreportcard.com/report/github.com/cloudfoundry-community/go-uaa)
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fcloudfoundry-community%2Fgo-uaa.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fcloudfoundry-community%2Fgo-uaa?ref=badge_shield)
 
 ### Overview
 
@@ -77,3 +78,7 @@ func main() {
 ### Contributing
 
 Pull requests welcome.
+
+
+## License
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fcloudfoundry-community%2Fgo-uaa.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Fcloudfoundry-community%2Fgo-uaa?ref=badge_large)
