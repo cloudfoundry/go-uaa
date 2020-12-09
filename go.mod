@@ -3,7 +3,7 @@ module github.com/cloudfoundry-community/go-uaa
 require (
 	github.com/fatih/color v1.9.0
 	github.com/kr/pretty v0.1.0 // indirect
-	github.com/onsi/gomega v1.10.3
+	github.com/onsi/gomega v1.10.4
 	github.com/pkg/errors v0.9.1
 	github.com/sclevine/spec v1.4.0
 	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
