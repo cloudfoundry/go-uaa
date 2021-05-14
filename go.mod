@@ -1,7 +1,7 @@
 module github.com/cloudfoundry-community/go-uaa
 
 require (
-	github.com/fatih/color v1.9.0
+	github.com/fatih/color v1.11.0
 	github.com/kr/pretty v0.1.0 // indirect
 	github.com/onsi/gomega v1.10.3
 	github.com/pkg/errors v0.9.1
