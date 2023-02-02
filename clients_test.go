@@ -43,9 +43,10 @@ const clientListResponse = `{
 var testClientValue uaa.Client = uaa.Client{
 	ClientID:     "00000000-0000-0000-0000-000000000001",
 	ClientSecret: "new_secret",
+	AllowPublic:  true,
 }
 
-const testClientJSON string = `{"client_id": "00000000-0000-0000-0000-000000000001", "client_secret": "new_secret"}`
+const testClientJSON string = `{"client_id": "00000000-0000-0000-0000-000000000001", "client_secret": "new_secret", "allowpublic": true}`
 
 func testClientExtra(t *testing.T, when spec.G, it spec.S) {
 	it.Before(func() {
@@ -115,7 +116,8 @@ func testClientExtra(t *testing.T, when spec.G, it spec.S) {
       	"allowedproviders" : [ "uaa", "ldap", "my-saml-provider" ],
       	"name" : "My Client Name",
       	"lastModified" : 1502816030525,
-      	"required_user_groups" : [ ]
+      	"required_user_groups" : [ ],
+		"allowpublic" : true
       }`
 
 			it.Before(func() {
