@@ -1,5 +1,9 @@
 module github.com/cloudfoundry-community/go-uaa
 
+go 1.24
+
+toolchain go1.24.0
+
 require (
 	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/gomega v1.34.1
@@ -21,4 +25,3 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-go 1.20
