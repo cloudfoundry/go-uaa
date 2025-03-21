@@ -47,7 +47,7 @@ func (a *API) Update{{.ModelTypeName}}({{tolower .ModelTypeName}} {{.ModelTypeNa
 	if err != nil {
 		return nil, err
 	}
-	err = a.doJSON(http.MethodPut, &u, bytes.NewBuffer([]byte(j)), created, true)
+	err = a.doJSONWithHeaders(http.MethodPut, &u, map[string]string{"If-Match": "*"}, bytes.NewBuffer([]byte(j)), created, true)
 	if err != nil {
 		return nil, err
 	}
