@@ -13,6 +13,8 @@ jobs:
   go-versions:
     name: Lookup Go versions
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     outputs:
       matrix: ${{ steps.versions.outputs.matrix }}
     steps:
@@ -23,6 +25,8 @@ jobs:
   build:
     name: Test
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     needs: go-versions
     strategy:
       matrix:
