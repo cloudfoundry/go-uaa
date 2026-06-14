@@ -300,4 +300,101 @@ func testClientExtra(t *testing.T, when spec.G, it spec.S) {
 			Expect(err).NotTo(BeNil())
 		})
 	})
+
+	when("ChangeClientJWT()", func() {
+		var (
+			s       *httptest.Server
+			handler http.Handler
+			called  int
+			a       *uaa.API
+		)
+
+		it.Before(func() {
+			RegisterTestingT(t)
+			called = 0
+			s = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+				called = called + 1
+				Expect(handler).NotTo(BeNil())
+				handler.ServeHTTP(w, req)
+			}))
+			a, _ = uaa.New(s.URL, uaa.WithNoAuthentication())
+		})
+
+		it.After(func() {
+			if s != nil {
+				s.Close()
+			}
+		})
+
+		it("calls PUT /oauth/clients/<clientid>/clientjwt with jwks_uri", func() {
+			handler = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+				Expect(req.Header.Get("Accept")).To(Equal("application/json"))
+				Expect(req.Header.Get("Content-Type")).To(Equal("application/json"))
+				Expect(req.Method).To(Equal(http.MethodPut))
+				Expect(req.URL.Path).To(Equal(uaa.ClientsEndpoint + "/myclient/clientjwt"))
+				defer req.Body.Close()
+				body, _ := ioutil.ReadAll(req.Body)
+				Expect(body).To(MatchJSON(`{"client_id":"myclient","changeMode":"ADD","jwks_uri":"https://example.com/jwks"}`))
+				w.WriteHeader(http.StatusOK)
+			})
+			err := a.ChangeClientJWT(uaa.ClientJwtChangeRequest{
+				ClientID:   "myclient",
+				ChangeMode: uaa.ChangeClientJwtModeAdd,
+				JwksURI:    "https://example.com/jwks",
+			})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(called).To(Equal(1))
+		})
+
+		it("calls PUT /oauth/clients/<clientid>/clientjwt with federation JWT trust", func() {
+			handler = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+				Expect(req.Method).To(Equal(http.MethodPut))
+				Expect(req.URL.Path).To(Equal(uaa.ClientsEndpoint + "/myclient/clientjwt"))
+				defer req.Body.Close()
+				body, _ := ioutil.ReadAll(req.Body)
+				Expect(body).To(MatchJSON(`{"client_id":"myclient","changeMode":"ADD","iss":"https://idp.example.com","sub":"service-account","aud":"uaa"}`))
+				w.WriteHeader(http.StatusOK)
+			})
+			err := a.ChangeClientJWT(uaa.ClientJwtChangeRequest{
+				ClientID:   "myclient",
+				ChangeMode: uaa.ChangeClientJwtModeAdd,
+				Issuer:     "https://idp.example.com",
+				Subject:    "service-account",
+				Audience:   "uaa",
+			})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(called).To(Equal(1))
+		})
+
+		it("calls PUT /oauth/clients/<clientid>/clientjwt to delete a key by kid", func() {
+			handler = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+				Expect(req.Method).To(Equal(http.MethodPut))
+				Expect(req.URL.Path).To(Equal(uaa.ClientsEndpoint + "/myclient/clientjwt"))
+				defer req.Body.Close()
+				body, _ := ioutil.ReadAll(req.Body)
+				Expect(body).To(MatchJSON(`{"client_id":"myclient","changeMode":"DELETE","kid":"key-1"}`))
+				w.WriteHeader(http.StatusOK)
+			})
+			err := a.ChangeClientJWT(uaa.ClientJwtChangeRequest{
+				ClientID:   "myclient",
+				ChangeMode: uaa.ChangeClientJwtModeDelete,
+				Kid:        "key-1",
+			})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(called).To(Equal(1))
+		})
+
+		it("returns an error when the server responds with an error", func() {
+			handler = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+				w.WriteHeader(http.StatusUnauthorized)
+			})
+			err := a.ChangeClientJWT(uaa.ClientJwtChangeRequest{
+				ClientID:   "myclient",
+				ChangeMode: uaa.ChangeClientJwtModeAdd,
+				JwksURI:    "https://example.com/jwks",
+			})
+			Expect(called).To(Equal(1))
+			Expect(err).NotTo(BeNil())
+		})
+	})
 }

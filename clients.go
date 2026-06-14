@@ -40,6 +40,8 @@ type Client struct {
 	ClientSecret         string      `json:"client_secret,omitempty"`
 	LastModified         int64       `json:"lastModified,omitempty"`
 	AllowPublic          bool        `json:"allowpublic,omitempty"`
+	JwksURI              string      `json:"jwks_uri,omitempty"`
+	Jwks                 string      `json:"jwks,omitempty"`
 }
 
 // Identifier returns the field used to uniquely identify a Client.
@@ -155,4 +157,37 @@ func (a *API) ChangeClientSecret(id string, newSecret string) error {
 		return err
 	}
 	return nil
+}
+
+// ChangeClientJwtMode is the operation mode for ChangeClientJWT.
+type ChangeClientJwtMode string
+
+const (
+	ChangeClientJwtModeAdd    = ChangeClientJwtMode("ADD")
+	ChangeClientJwtModeUpdate = ChangeClientJwtMode("UPDATE")
+	ChangeClientJwtModeDelete = ChangeClientJwtMode("DELETE")
+)
+
+// ClientJwtChangeRequest is the request body for the PUT /oauth/clients/{id}/clientjwt endpoint.
+type ClientJwtChangeRequest struct {
+	ClientID   string              `json:"client_id,omitempty"`
+	ChangeMode ChangeClientJwtMode `json:"changeMode,omitempty"`
+	JwksURI    string              `json:"jwks_uri,omitempty"`
+	Jwks       string              `json:"jwks,omitempty"`
+	Kid        string              `json:"kid,omitempty"`
+	Issuer     string              `json:"iss,omitempty"`
+	Subject    string              `json:"sub,omitempty"`
+	Audience   string              `json:"aud,omitempty"`
+}
+
+// ChangeClientJWT configures the JWT trust for the client with the given id.
+// Use jwks_uri or jwks to specify public keys; use iss/sub/aud for federation JWT trust.
+// changeMode controls whether the key is ADDed, UPDATEd, or DELETEd (kid required for DELETE).
+func (a *API) ChangeClientJWT(req ClientJwtChangeRequest) error {
+	u := urlWithPath(*a.TargetURL, fmt.Sprintf("%s/%s/clientjwt", ClientsEndpoint, req.ClientID))
+	j, err := json.Marshal(req)
+	if err != nil {
+		return err
+	}
+	return a.doJSON(http.MethodPut, &u, bytes.NewBuffer(j), nil, true)
 }
