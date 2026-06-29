@@ -1,0 +1,99 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump_type:
+        description: 'Type of version bump (major, minor, or patch)'
+        required: true
+        type: choice
+        default: 'patch'
+        options:
+          - major
+          - minor
+          - patch
+
+run-name: "Ship ${{ inputs.bump_type }} Release"
+
+concurrency:
+  group: serialize-releases-${{ github.repository }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: stable
+          check-latest: true
+
+      - name: Set next version from last tag
+        id: bump_semver
+        run: |
+          prev_tag=$(git tag -l 'v*' --sort=-v:refname | head -n1)
+          prev_tag=${prev_tag:-v0.0.0}
+          version=${prev_tag#v}
+          new_version=$(npx -y semver -i ${{ inputs.bump_type }} $version)
+          echo "version=${new_version}" >> $GITHUB_OUTPUT
+          echo "tag=v${new_version}" >> $GITHUB_OUTPUT
+          echo "prev_tag=${prev_tag}" >> $GITHUB_OUTPUT
+          echo "🤔 *Previous tag: ${prev_tag}*" >> $GITHUB_STEP_SUMMARY
+          echo "### 👷 Building ${new_version}" >> $GITHUB_STEP_SUMMARY
+
+      - name: Build
+        run: go build -v ./...
+
+      - name: Test
+        run: go run github.com/onsi/ginkgo/v2/ginkgo -v -r --randomize-suites --randomize-all -race
+
+      - name: Setup Git
+        run: |
+          git config --global user.email "identity-uaa+ci@pivotal.io"
+          git config --global user.name "UAA Identity Bot"
+
+      - name: Create new tag
+        id: create_tag
+        run: |
+          prev_tag=${{ steps.bump_semver.outputs.prev_tag }}
+          tag=${{ steps.bump_semver.outputs.tag }}
+          git tag "${tag}"
+          git push origin "${tag}"
+          if git rev-parse -q --verify "refs/tags/${prev_tag}"; then
+            change_range="${prev_tag}...${tag}"
+          else
+            change_range=""
+          fi
+          echo "🏷️ *Created tag: ${tag}*" >> $GITHUB_STEP_SUMMARY
+          git log --pretty='* %s' ${change_range} > changelog.md
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GHE_TOKEN }}
+        with:
+          release_name: "${{ steps.bump_semver.outputs.tag }}"
+          tag_name: ${{ steps.bump_semver.outputs.tag }}
+          draft: true
+          prerelease: false
+
+      - name: Summary
+        run: |
+          version=${{ steps.bump_semver.outputs.version }}
+          prev_tag=${{ steps.bump_semver.outputs.prev_tag }}
+          tag=${{ steps.bump_semver.outputs.tag }}
+          change_range=${tag}
+          if git rev-parse -q --verify "refs/tags/${prev_tag}"; then
+            change_range="${prev_tag}...${tag}"
+          fi
+          echo "### 🎉 Created release: ${RELEASE_NAME} ${{ steps.bump_semver.outputs.tag }}" >> $GITHUB_STEP_SUMMARY
+          echo "🌐 GitHub Release URL: ${{ steps.create_release.outputs.html_url }}" >> $GITHUB_STEP_SUMMARY
+          echo "📝 Compare Tags URL: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/compare/${change_range}" >> $GITHUB_STEP_SUMMARY
