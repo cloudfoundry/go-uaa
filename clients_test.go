@@ -1,6 +1,7 @@
 package uaa_test
 
 import (
+	"encoding/json"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -337,10 +338,28 @@ func testClientExtra(t *testing.T, when spec.G, it spec.S) {
 				Expect(body).To(MatchJSON(`{"client_id":"myclient","changeMode":"ADD","jwks_uri":"https://example.com/jwks"}`))
 				w.WriteHeader(http.StatusOK)
 			})
-			err := a.ChangeClientJWT(uaa.ClientJwtChangeRequest{
+			err := a.ChangeClientJWT(uaa.ClientJWTChangeRequest{
 				ClientID:   "myclient",
-				ChangeMode: uaa.ChangeClientJwtModeAdd,
+				ChangeMode: uaa.ChangeClientJWTModeAdd,
 				JwksURI:    "https://example.com/jwks",
+			})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(called).To(Equal(1))
+		})
+
+		it("calls PUT /oauth/clients/<clientid>/clientjwt with a jwks JSON object", func() {
+			handler = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+				Expect(req.Method).To(Equal(http.MethodPut))
+				Expect(req.URL.Path).To(Equal(uaa.ClientsEndpoint + "/myclient/clientjwt"))
+				defer req.Body.Close()
+				body, _ := ioutil.ReadAll(req.Body)
+				Expect(body).To(MatchJSON(`{"client_id":"myclient","changeMode":"ADD","jwks":{"keys":[{"kty":"RSA","kid":"key-1","n":"abc","e":"AQAB"}]}}`))
+				w.WriteHeader(http.StatusOK)
+			})
+			err := a.ChangeClientJWT(uaa.ClientJWTChangeRequest{
+				ClientID:   "myclient",
+				ChangeMode: uaa.ChangeClientJWTModeAdd,
+				Jwks:       json.RawMessage(`{"keys":[{"kty":"RSA","kid":"key-1","n":"abc","e":"AQAB"}]}`),
 			})
 			Expect(err).NotTo(HaveOccurred())
 			Expect(called).To(Equal(1))
@@ -355,9 +374,9 @@ func testClientExtra(t *testing.T, when spec.G, it spec.S) {
 				Expect(body).To(MatchJSON(`{"client_id":"myclient","changeMode":"ADD","iss":"https://idp.example.com","sub":"service-account","aud":"uaa"}`))
 				w.WriteHeader(http.StatusOK)
 			})
-			err := a.ChangeClientJWT(uaa.ClientJwtChangeRequest{
+			err := a.ChangeClientJWT(uaa.ClientJWTChangeRequest{
 				ClientID:   "myclient",
-				ChangeMode: uaa.ChangeClientJwtModeAdd,
+				ChangeMode: uaa.ChangeClientJWTModeAdd,
 				Issuer:     "https://idp.example.com",
 				Subject:    "service-account",
 				Audience:   "uaa",
@@ -375,9 +394,9 @@ func testClientExtra(t *testing.T, when spec.G, it spec.S) {
 				Expect(body).To(MatchJSON(`{"client_id":"myclient","changeMode":"DELETE","kid":"key-1"}`))
 				w.WriteHeader(http.StatusOK)
 			})
-			err := a.ChangeClientJWT(uaa.ClientJwtChangeRequest{
+			err := a.ChangeClientJWT(uaa.ClientJWTChangeRequest{
 				ClientID:   "myclient",
-				ChangeMode: uaa.ChangeClientJwtModeDelete,
+				ChangeMode: uaa.ChangeClientJWTModeDelete,
 				Kid:        "key-1",
 			})
 			Expect(err).NotTo(HaveOccurred())
@@ -388,13 +407,37 @@ func testClientExtra(t *testing.T, when spec.G, it spec.S) {
 			handler = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 				w.WriteHeader(http.StatusUnauthorized)
 			})
-			err := a.ChangeClientJWT(uaa.ClientJwtChangeRequest{
+			err := a.ChangeClientJWT(uaa.ClientJWTChangeRequest{
 				ClientID:   "myclient",
-				ChangeMode: uaa.ChangeClientJwtModeAdd,
+				ChangeMode: uaa.ChangeClientJWTModeAdd,
 				JwksURI:    "https://example.com/jwks",
 			})
 			Expect(called).To(Equal(1))
 			Expect(err).NotTo(BeNil())
+		})
+
+		it("returns an error when client_id is empty", func() {
+			handler = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+				w.WriteHeader(http.StatusOK)
+			})
+			err := a.ChangeClientJWT(uaa.ClientJWTChangeRequest{
+				ChangeMode: uaa.ChangeClientJWTModeAdd,
+				JwksURI:    "https://example.com/jwks",
+			})
+			Expect(called).To(Equal(0))
+			Expect(err).To(HaveOccurred())
+		})
+
+		it("returns an error when changeMode is DELETE without a kid", func() {
+			handler = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+				w.WriteHeader(http.StatusOK)
+			})
+			err := a.ChangeClientJWT(uaa.ClientJWTChangeRequest{
+				ClientID:   "myclient",
+				ChangeMode: uaa.ChangeClientJWTModeDelete,
+			})
+			Expect(called).To(Equal(0))
+			Expect(err).To(HaveOccurred())
 		})
 	})
 }
