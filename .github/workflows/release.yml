@@ -81,7 +81,8 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          tag=${{ steps.bump_semver.outputs.tag }}
+          tag="${{ steps.bump_semver.outputs.tag }}"
+          echo "RELEASE_NAME=${tag}" >> "$GITHUB_ENV"
           html_url=$(gh release create "${tag}" \
             --title "${tag}" \
             --notes-file changelog.md \
