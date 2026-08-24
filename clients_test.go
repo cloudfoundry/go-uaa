@@ -173,6 +173,72 @@ func testClientExtra(t *testing.T, when spec.G, it spec.S) {
 				Expect(client.AllowPublic()).To(BeTrue())
 			})
 		})
+
+		when("the client returned from the server encodes additionalInformation-backed fields as strings instead of their usual JSON types", func() {
+			response := `{
+      	"scope" : [ "clients.read", "clients.write" ],
+      	"client_id" : "00000000-0000-0000-0000-000000000001",
+      	"resource_ids" : [ "none" ],
+      	"authorized_grant_types" : [ "client_credentials" ],
+      	"redirect_uri" : [ "http://ant.path.wildcard/**/passback/*", "http://test1.com" ],
+      	"autoapprove" : [ "true" ],
+      	"authorities" : [ "clients.read", "clients.write" ],
+      	"token_salt" : "1SztLL",
+      	"allowedproviders" : "uaa",
+      	"name" : "My Client Name",
+      	"lastModified" : "1502816030525",
+      	"required_user_groups" : "uaa.admin",
+		"approvals_deleted" : "true"
+      }`
+
+			it.Before(func() {
+				server.AppendHandlers(ghttp.CombineHandlers(
+					ghttp.VerifyRequest("GET", uaa.ClientsEndpoint+"/00000000-0000-0000-0000-000000000001"),
+					ghttp.VerifyHeaderKV("Accept", "application/json"),
+					ghttp.RespondWith(http.StatusOK, response),
+				))
+			})
+
+			it("decodes the allowedproviders value", func() {
+				client, err := a.GetClient("00000000-0000-0000-0000-000000000001")
+				Expect(err).NotTo(HaveOccurred())
+				Expect(client.AllowedProviders()).To(Equal([]string{"uaa"}))
+			})
+
+			it("decodes the required_user_groups value", func() {
+				client, err := a.GetClient("00000000-0000-0000-0000-000000000001")
+				Expect(err).NotTo(HaveOccurred())
+				Expect(client.RequiredUserGroups()).To(Equal([]string{"uaa.admin"}))
+			})
+
+			it("decodes the approvals_deleted value", func() {
+				client, err := a.GetClient("00000000-0000-0000-0000-000000000001")
+				Expect(err).NotTo(HaveOccurred())
+				Expect(client.ApprovalsDeleted()).To(BeTrue())
+			})
+
+			it("decodes the lastModified value", func() {
+				client, err := a.GetClient("00000000-0000-0000-0000-000000000001")
+				Expect(err).NotTo(HaveOccurred())
+				Expect(client.LastModified()).To(Equal(int64(1502816030525)))
+			})
+		})
+
+		when("the client returned from the server encodes lastModified as a JSON number", func() {
+			it.Before(func() {
+				server.AppendHandlers(ghttp.CombineHandlers(
+					ghttp.VerifyRequest("GET", uaa.ClientsEndpoint+"/00000000-0000-0000-0000-000000000001"),
+					ghttp.VerifyHeaderKV("Accept", "application/json"),
+					ghttp.RespondWith(http.StatusOK, clientResponse),
+				))
+			})
+
+			it("decodes the lastModified value", func() {
+				client, err := a.GetClient("00000000-0000-0000-0000-000000000001")
+				Expect(err).NotTo(HaveOccurred())
+				Expect(client.LastModified()).To(Equal(int64(1502816030525)))
+			})
+		})
 	})
 
 	when("Client.Validate()", func() {
