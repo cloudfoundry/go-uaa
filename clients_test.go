@@ -42,9 +42,9 @@ const clientListResponse = `{
 }`
 
 var testClientValue uaa.Client = uaa.Client{
-	ClientID:       "00000000-0000-0000-0000-000000000001",
-	ClientSecret:   "new_secret",
-	AllowPublicRaw: true,
+	ClientID:     "00000000-0000-0000-0000-000000000001",
+	ClientSecret: "new_secret",
+	AllowPublic:  true,
 }
 
 const testClientJSON string = `{"client_id": "00000000-0000-0000-0000-000000000001", "client_secret": "new_secret", "allowpublic": true}`
@@ -104,6 +104,28 @@ func testClientExtra(t *testing.T, when spec.G, it spec.S) {
 			})
 		})
 
+		when("the client returned from the server contains an autoapprove value that is a JSON array", func() {
+			it.Before(func() {
+				server.AppendHandlers(ghttp.CombineHandlers(
+					ghttp.VerifyRequest("GET", uaa.ClientsEndpoint+"/00000000-0000-0000-0000-000000000001"),
+					ghttp.VerifyHeaderKV("Accept", "application/json"),
+					ghttp.RespondWith(http.StatusOK, clientResponse),
+				))
+			})
+
+			it("decodes the autoapprove value", func() {
+				client, err := a.GetClient("00000000-0000-0000-0000-000000000001")
+				Expect(err).NotTo(HaveOccurred())
+				Expect(client.AutoApprove()).To(Equal([]string{"true"}))
+			})
+
+			it("decodes the allowedproviders value", func() {
+				client, err := a.GetClient("00000000-0000-0000-0000-000000000001")
+				Expect(err).NotTo(HaveOccurred())
+				Expect(client.AllowedProviders).To(Equal([]string{"uaa", "ldap", "my-saml-provider"}))
+			})
+		})
+
 		when("the client returned from the server contains an autoapprove value that is a string", func() {
 			response := `{
       	"scope" : [ "clients.read", "clients.write" ],
@@ -138,7 +160,7 @@ func testClientExtra(t *testing.T, when spec.G, it spec.S) {
 			it("decodes the allowpublic value", func() {
 				client, err := a.GetClient("00000000-0000-0000-0000-000000000001")
 				Expect(err).NotTo(HaveOccurred())
-				Expect(client.AllowPublic()).To(BeTrue())
+				Expect(client.AllowPublic).To(BeTrue())
 			})
 		})
 
@@ -170,7 +192,7 @@ func testClientExtra(t *testing.T, when spec.G, it spec.S) {
 			it("decodes the allowpublic value", func() {
 				client, err := a.GetClient("00000000-0000-0000-0000-000000000001")
 				Expect(err).NotTo(HaveOccurred())
-				Expect(client.AllowPublic()).To(BeTrue())
+				Expect(client.AllowPublic).To(BeTrue())
 			})
 		})
 
@@ -202,29 +224,29 @@ func testClientExtra(t *testing.T, when spec.G, it spec.S) {
 			it("decodes the allowedproviders value", func() {
 				client, err := a.GetClient("00000000-0000-0000-0000-000000000001")
 				Expect(err).NotTo(HaveOccurred())
-				Expect(client.AllowedProviders()).To(Equal([]string{"uaa"}))
+				Expect(client.AllowedProviders).To(Equal([]string{"uaa"}))
 			})
 
 			it("decodes the required_user_groups value", func() {
 				client, err := a.GetClient("00000000-0000-0000-0000-000000000001")
 				Expect(err).NotTo(HaveOccurred())
-				Expect(client.RequiredUserGroups()).To(Equal([]string{"uaa.admin"}))
+				Expect(client.RequiredUserGroups).To(Equal([]string{"uaa.admin"}))
 			})
 
 			it("decodes the approvals_deleted value", func() {
 				client, err := a.GetClient("00000000-0000-0000-0000-000000000001")
 				Expect(err).NotTo(HaveOccurred())
-				Expect(client.ApprovalsDeleted()).To(BeTrue())
+				Expect(client.ApprovalsDeleted).To(BeTrue())
 			})
 
 			it("decodes the lastModified value", func() {
 				client, err := a.GetClient("00000000-0000-0000-0000-000000000001")
 				Expect(err).NotTo(HaveOccurred())
-				Expect(client.LastModified()).To(Equal(int64(1502816030525)))
+				Expect(client.LastModified).To(Equal(int64(1502816030525)))
 			})
 		})
 
-		when("the client returned from the server encodes lastModified as a JSON number", func() {
+		when("the client returned from the server encodes lastModified as a JSON number and allowedproviders/required_user_groups as JSON arrays", func() {
 			it.Before(func() {
 				server.AppendHandlers(ghttp.CombineHandlers(
 					ghttp.VerifyRequest("GET", uaa.ClientsEndpoint+"/00000000-0000-0000-0000-000000000001"),
@@ -236,7 +258,19 @@ func testClientExtra(t *testing.T, when spec.G, it spec.S) {
 			it("decodes the lastModified value", func() {
 				client, err := a.GetClient("00000000-0000-0000-0000-000000000001")
 				Expect(err).NotTo(HaveOccurred())
-				Expect(client.LastModified()).To(Equal(int64(1502816030525)))
+				Expect(client.LastModified).To(Equal(int64(1502816030525)))
+			})
+
+			it("decodes the allowedproviders value", func() {
+				client, err := a.GetClient("00000000-0000-0000-0000-000000000001")
+				Expect(err).NotTo(HaveOccurred())
+				Expect(client.AllowedProviders).To(Equal([]string{"uaa", "ldap", "my-saml-provider"}))
+			})
+
+			it("decodes the (empty) required_user_groups value", func() {
+				client, err := a.GetClient("00000000-0000-0000-0000-000000000001")
+				Expect(err).NotTo(HaveOccurred())
+				Expect(client.RequiredUserGroups).To(Equal([]string{}))
 			})
 		})
 	})
