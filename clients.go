@@ -22,26 +22,26 @@ type paginatedClientList struct {
 // Client is a UAA client
 // http://docs.cloudfoundry.org/api/uaa/version/4.19.0/index.html#clients.
 type Client struct {
-	ClientID             string          `json:"client_id,omitempty" generator:"id"`
-	AuthorizedGrantTypes []string        `json:"authorized_grant_types,omitempty"`
-	RedirectURI          []string        `json:"redirect_uri,omitempty"`
-	Scope                []string        `json:"scope,omitempty"`
-	ResourceIDs          []string        `json:"resource_ids,omitempty"`
-	Authorities          []string        `json:"authorities,omitempty"`
-	AutoApproveRaw       interface{}     `json:"autoapprove,omitempty"`
-	AccessTokenValidity  int64           `json:"access_token_validity,omitempty"`
-	RefreshTokenValidity int64           `json:"refresh_token_validity,omitempty"`
-	AllowedProviders     []string        `json:"allowedproviders,omitempty"`
-	DisplayName          string          `json:"name,omitempty"`
-	TokenSalt            string          `json:"token_salt,omitempty"`
-	CreatedWith          string          `json:"createdwith,omitempty"`
-	ApprovalsDeleted     bool            `json:"approvals_deleted,omitempty"`
-	RequiredUserGroups   []string        `json:"required_user_groups,omitempty"`
-	ClientSecret         string          `json:"client_secret,omitempty"`
-	LastModified         int64           `json:"lastModified,omitempty"`
-	AllowPublicRaw       interface{}     `json:"allowpublic,omitempty"`
-	JwksURI              string          `json:"jwks_uri,omitempty"`
-	Jwks                 json.RawMessage `json:"jwks,omitempty"`
+	ClientID              string          `json:"client_id,omitempty" generator:"id"`
+	AuthorizedGrantTypes  []string        `json:"authorized_grant_types,omitempty"`
+	RedirectURI           []string        `json:"redirect_uri,omitempty"`
+	Scope                 []string        `json:"scope,omitempty"`
+	ResourceIDs           []string        `json:"resource_ids,omitempty"`
+	Authorities           []string        `json:"authorities,omitempty"`
+	AutoApproveRaw        interface{}     `json:"autoapprove,omitempty"`
+	AccessTokenValidity   int64           `json:"access_token_validity,omitempty"`
+	RefreshTokenValidity  int64           `json:"refresh_token_validity,omitempty"`
+	AllowedProvidersRaw   interface{}     `json:"allowedproviders,omitempty"`
+	DisplayName           string          `json:"name,omitempty"`
+	TokenSalt             string          `json:"token_salt,omitempty"`
+	CreatedWith           string          `json:"createdwith,omitempty"`
+	ApprovalsDeletedRaw   interface{}     `json:"approvals_deleted,omitempty"`
+	RequiredUserGroupsRaw interface{}     `json:"required_user_groups,omitempty"`
+	ClientSecret          string          `json:"client_secret,omitempty"`
+	LastModifiedRaw       interface{}     `json:"lastModified,omitempty"`
+	AllowPublicRaw        interface{}     `json:"allowpublic,omitempty"`
+	JwksURI               string          `json:"jwks_uri,omitempty"`
+	Jwks                  json.RawMessage `json:"jwks,omitempty"`
 }
 
 // Identifier returns the field used to uniquely identify a Client.
@@ -75,6 +75,66 @@ func (c Client) AllowPublic() bool {
 		return b
 	}
 	return false
+}
+
+// ApprovalsDeleted returns whether the client's approvals were deleted,
+// tolerating UAA responses that encode approvals_deleted as either a JSON
+// boolean or string.
+func (c Client) ApprovalsDeleted() bool {
+	switch t := c.ApprovalsDeletedRaw.(type) {
+	case bool:
+		return t
+	case string:
+		b, err := strconv.ParseBool(t)
+		if err != nil {
+			return false
+		}
+		return b
+	}
+	return false
+}
+
+// AllowedProviders returns the client's allowed identity providers,
+// tolerating UAA responses that encode allowedproviders as either a JSON
+// array or a single string.
+func (c Client) AllowedProviders() []string {
+	switch t := c.AllowedProvidersRaw.(type) {
+	case string:
+		return []string{t}
+	case []string:
+		return t
+	}
+	return []string{}
+}
+
+// RequiredUserGroups returns the client's required user groups, tolerating
+// UAA responses that encode required_user_groups as either a JSON array or a
+// single string.
+func (c Client) RequiredUserGroups() []string {
+	switch t := c.RequiredUserGroupsRaw.(type) {
+	case string:
+		return []string{t}
+	case []string:
+		return t
+	}
+	return []string{}
+}
+
+// LastModified returns the client's last-modified timestamp in epoch
+// milliseconds, tolerating UAA responses that encode lastModified as either a
+// JSON number or string.
+func (c Client) LastModified() int64 {
+	switch t := c.LastModifiedRaw.(type) {
+	case float64:
+		return int64(t)
+	case string:
+		i, err := strconv.ParseInt(t, 10, 64)
+		if err != nil {
+			return 0
+		}
+		return i
+	}
+	return 0
 }
 
 // GrantType is a type of oauth2 grant.
