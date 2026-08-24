@@ -39,7 +39,7 @@ type Client struct {
 	RequiredUserGroups   []string        `json:"required_user_groups,omitempty"`
 	ClientSecret         string          `json:"client_secret,omitempty"`
 	LastModified         int64           `json:"lastModified,omitempty"`
-	AllowPublic          bool            `json:"allowpublic,omitempty"`
+	AllowPublicRaw       interface{}     `json:"allowpublic,omitempty"`
 	JwksURI              string          `json:"jwks_uri,omitempty"`
 	Jwks                 json.RawMessage `json:"jwks,omitempty"`
 }
@@ -59,6 +59,22 @@ func (c Client) AutoApprove() []string {
 		return t
 	}
 	return []string{}
+}
+
+// AllowPublic returns whether the client allows public access, tolerating
+// UAA responses that encode allowpublic as either a JSON boolean or string.
+func (c Client) AllowPublic() bool {
+	switch t := c.AllowPublicRaw.(type) {
+	case bool:
+		return t
+	case string:
+		b, err := strconv.ParseBool(t)
+		if err != nil {
+			return false
+		}
+		return b
+	}
+	return false
 }
 
 // GrantType is a type of oauth2 grant.
