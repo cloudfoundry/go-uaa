@@ -50,9 +50,13 @@ type Client struct {
 // string instead of a boolean, or a single string instead of an array). UAA
 // stores these fields in a loosely-typed map and serializes back whatever
 // type was originally stored there, so the same field can come back as a
-// bool on one client and a string on another. AllowPublic, ApprovalsDeleted,
-// LastModified, AllowedProviders, and RequiredUserGroups keep their normal
-// public field types; only decoding is more lenient.
+// bool on one client and a string on another. resource_ids gets the same
+// tolerance defensively: upstream UAA always serializes it as an array since
+// it's backed by a dedicated Set<String> field rather than the loosely-typed
+// map, but non-standard UAA-compatible servers have been observed sending it
+// as a bare string (cloudfoundry/uaa-cli#170). AllowPublic, ApprovalsDeleted,
+// LastModified, AllowedProviders, RequiredUserGroups, and ResourceIDs keep
+// their normal public field types; only decoding is more lenient.
 func (c *Client) UnmarshalJSON(data []byte) error {
 	type alias Client
 	aux := struct {
@@ -61,6 +65,7 @@ func (c *Client) UnmarshalJSON(data []byte) error {
 		LastModified       interface{} `json:"lastModified,omitempty"`
 		AllowedProviders   interface{} `json:"allowedproviders,omitempty"`
 		RequiredUserGroups interface{} `json:"required_user_groups,omitempty"`
+		ResourceIDs        interface{} `json:"resource_ids,omitempty"`
 		*alias
 	}{
 		alias: (*alias)(c),
@@ -75,6 +80,7 @@ func (c *Client) UnmarshalJSON(data []byte) error {
 	c.LastModified = clientRawToInt64(aux.LastModified)
 	c.AllowedProviders = clientRawToStringSlice(aux.AllowedProviders)
 	c.RequiredUserGroups = clientRawToStringSlice(aux.RequiredUserGroups)
+	c.ResourceIDs = clientRawToStringSlice(aux.ResourceIDs)
 
 	return nil
 }
